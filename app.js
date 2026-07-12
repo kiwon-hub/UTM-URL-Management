@@ -10,6 +10,7 @@
     metaPlacement: null,
     metaCustom: "",
     page: null,
+    userPageId: null,
     customPath: "",
     content: ""
   };
@@ -95,20 +96,20 @@
     state.page = null;
 
     resetStep(stepVariant, variantSelect, "먼저 광고 종류를 선택하세요");
-    resetStep(stepPage, pageSelect, "먼저 프로젝트를 선택하세요");
+    resetStep(stepChannel, channelSelect, "먼저 플랫폼을 선택하세요");
     stepContent.classList.add("disabled");
     stepMeta.style.display = "none";
     customVariantBox.classList.add("hidden");
     customPageBox.classList.add("hidden");
+    fixedPageNote.classList.add("hidden");
     contentInput.value = "";
     state.content = "";
     clearResult();
 
-    resetStep(stepChannel, channelSelect, "먼저 플랫폼을 선택하세요");
-
     if (!state.site) {
       stepPlatform.classList.add("disabled");
       platformGroup.innerHTML = "";
+      resetStep(stepPage, pageSelect, "먼저 사이트를 선택하세요");
       return;
     }
 
@@ -123,27 +124,63 @@
       btn.addEventListener("click", () => onPlatformSelect(p.id));
       platformGroup.appendChild(btn);
     });
+
+    stepPage.classList.remove("disabled");
+    populatePageStep();
+  }
+
+  // 사이트의 전체 페이지 목록으로 2번(랜딩 페이지) 단계를 채운다. 채널/캠페인 선택과 무관하게 항상 전체 목록을 보여준다.
+  function populatePageStep() {
+    pageSelect.disabled = false;
+    customPageBox.classList.add("hidden");
+    fixedPageNote.classList.add("hidden");
+    pageSelect.innerHTML = `<option value="" selected disabled>랜딩 페이지를 선택하세요</option>`;
+    state.site.pages.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.name;
+      pageSelect.appendChild(opt);
+    });
+    const customOpt = document.createElement("option");
+    customOpt.value = CUSTOM_PAGE_ID;
+    customOpt.textContent = "+ 경로 직접 입력";
+    pageSelect.appendChild(customOpt);
+    state.page = null;
+    state.userPageId = null;
+  }
+
+  // 캠페인(프로젝트)이 랜딩 페이지를 강제로 고정하지 않는 한, 2번 단계를 사용자가 실제로 골랐던 값으로 되돌린다.
+  function resetPageOverride() {
+    pageSelect.disabled = false;
+    fixedPageNote.classList.add("hidden");
+    pageSelect.value = state.userPageId || "";
+    customPageBox.classList.toggle("hidden", pageSelect.value !== CUSTOM_PAGE_ID);
+    if (pageSelect.value === CUSTOM_PAGE_ID) {
+      state.page = null;
+    } else if (pageSelect.value) {
+      state.page = resolvePage(state.site, pageSelect.value);
+    } else {
+      state.page = null;
+    }
   }
 
   function onPlatformSelect(platformId) {
     state.platform = platformId;
     state.channel = null;
     state.variant = null;
-    state.page = null;
 
     Array.from(platformGroup.children).forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.platformId === platformId);
     });
 
     resetStep(stepVariant, variantSelect, "먼저 광고 종류를 선택하세요");
-    resetStep(stepPage, pageSelect, "먼저 프로젝트를 선택하세요");
     stepContent.classList.add("disabled");
     stepMeta.style.display = "none";
     customVariantBox.classList.add("hidden");
-    customPageBox.classList.add("hidden");
     contentInput.value = "";
     state.content = "";
     clearResult();
+    resetPageOverride();
 
     stepChannel.classList.remove("disabled");
     channelSelect.disabled = false;
@@ -161,15 +198,13 @@
   function onChannelChange() {
     state.channel = state.site.channels.find((c) => c.id === channelSelect.value) || null;
     state.variant = null;
-    state.page = null;
 
-    resetStep(stepPage, pageSelect, "먼저 프로젝트를 선택하세요");
     stepContent.classList.add("disabled");
     customVariantBox.classList.add("hidden");
-    customPageBox.classList.add("hidden");
     contentInput.value = "";
     state.content = "";
     clearResult();
+    resetPageOverride();
 
     if (!state.channel) {
       stepVariant.classList.add("disabled");
@@ -179,7 +214,7 @@
 
     stepVariant.classList.remove("disabled");
     variantSelect.disabled = false;
-    variantSelect.innerHTML = `<option value="" selected disabled>프로젝트를 선택하세요</option>`;
+    variantSelect.innerHTML = `<option value="" selected disabled>캠페인을 선택하세요</option>`;
     state.channel.variants.forEach((v) => {
       const opt = document.createElement("option");
       opt.value = v.id;
@@ -270,44 +305,24 @@
 
   function setupPageStep() {
     if (!state.variant || (variantSelect.value === CUSTOM_VARIANT_ID && !customCampaignInput.value.trim())) {
-      resetStep(stepPage, pageSelect, "먼저 프로젝트를 선택하세요");
       stepContent.classList.add("disabled");
       return;
     }
 
     const channel = state.channel;
 
-    // 채널에 따라 페이지가 고정되는 경우 (예: 네이버 파워컨텐츠, 오프라인 QR)
+    // 캠페인(프로젝트)에 따라 페이지가 고정되는 경우 (예: 네이버 파워컨텐츠, 오프라인 QR) — 2번에서 고른 값을 덮어쓴다.
     const fixedPageId = state.variant.page;
     if (fixedPageId) {
-      stepPage.classList.remove("disabled");
-      pageSelect.classList.add("hidden");
-      customPageBox.classList.add("hidden");
-      fixedPageNote.classList.remove("hidden");
       const page = resolvePage(state.site, fixedPageId);
       state.page = page;
-      fixedPageNote.textContent = `이 프로젝트는 랜딩 페이지가 "${page.name}"로 고정되어 있습니다.`;
+      pageSelect.value = fixedPageId;
+      pageSelect.disabled = true;
+      customPageBox.classList.add("hidden");
+      fixedPageNote.classList.remove("hidden");
+      fixedPageNote.textContent = `이 캠페인은 랜딩 페이지가 "${page.name}"로 고정되어 있어, 2번에서 고르신 값 대신 이 페이지를 사용합니다.`;
     } else {
-      pageSelect.classList.remove("hidden");
-      fixedPageNote.classList.add("hidden");
-      stepPage.classList.remove("disabled");
-      pageSelect.disabled = false;
-
-      const scopeIds = channel.pageScope;
-      const pages = scopeIds ? state.site.pages.filter((p) => scopeIds.includes(p.id)) : state.site.pages;
-
-      pageSelect.innerHTML = `<option value="" selected disabled>랜딩 페이지를 선택하세요</option>`;
-      pages.forEach((p) => {
-        const opt = document.createElement("option");
-        opt.value = p.id;
-        opt.textContent = p.name;
-        pageSelect.appendChild(opt);
-      });
-      const customOpt = document.createElement("option");
-      customOpt.value = CUSTOM_PAGE_ID;
-      customOpt.textContent = "+ 경로 직접 입력";
-      pageSelect.appendChild(customOpt);
-      state.page = null;
+      resetPageOverride();
     }
 
     stepContent.classList.remove("disabled");
@@ -321,6 +336,7 @@
 
   function onPageChange() {
     const val = pageSelect.value;
+    state.userPageId = val || null;
     customPageBox.classList.toggle("hidden", val !== CUSTOM_PAGE_ID);
     if (val === CUSTOM_PAGE_ID) {
       state.page = null;
@@ -349,7 +365,7 @@
       const page = resolvePage(state.site, state.variant.page);
       return { path: page.path, params: page.params || {} };
     }
-    if (pageSelect && !pageSelect.classList.contains("hidden") && pageSelect.value === CUSTOM_PAGE_ID) {
+    if (pageSelect && pageSelect.value === CUSTOM_PAGE_ID) {
       const raw = customPathInput.value.trim();
       const [path, query] = raw.split("?");
       const params = {};

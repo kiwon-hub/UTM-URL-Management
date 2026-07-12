@@ -42,7 +42,6 @@ const UTM_DATA = {
           platform: "kakao",
           medium: "kakao_keyword",
           defaultSource: "ads",
-          pageScope: ["root", "cat218", "cat219", "cat220", "prod130", "prod136", "prod231", "prod224", "join"],
           variants: [
             { id: "selling", name: "구매된 키워드", campaign: "selling_group_kakey" },
             { id: "general", name: "일반 키워드", campaign: "general_group_kakey" },
@@ -55,7 +54,6 @@ const UTM_DATA = {
           platform: "naver",
           medium: "naver_keyword_ads",
           defaultSource: "ads",
-          pageScope: ["root"],
           variants: [
             { id: "endmill", name: "엔드밀 그룹", campaign: "powerlink_endmill_group_nakey" },
             { id: "chuck", name: "척 그룹", campaign: "powerlink_chuck_group_nakey" }
@@ -128,10 +126,14 @@ const UTM_DATA = {
           medium: "naver_gfa",
           defaultSource: "ads",
           variants: [
-            { id: "new", name: "기본 - 신규", campaign: "audience_group_new_naperform" },
-            { id: "remarketing", name: "기본 - 리마케팅", campaign: "audience_group_remarketing_naperform" },
-            { id: "freesample_new", name: "무료샘플신청 - 신규", campaign: "free_sample_audience" },
-            { id: "freesample_remarketing", name: "무료샘플신청 - 리마케팅", campaign: "free_remarket_sample_audience" },
+            { id: "new_audience", name: "기본 - 신규 - 오디언스", campaign: "audience_group_new_naperform" },
+            { id: "new_advoost", name: "기본 - 신규 - 애드부스트오디언스", campaign: "advoostaudience_group_new_naperform" },
+            { id: "remarket_audience", name: "기본 - 리마케팅 - 오디언스", campaign: "audience_group_remarketing_naperform" },
+            { id: "remarket_advoost", name: "기본 - 리마케팅 - 애드부스트오디언스", campaign: "advoostaudience_group_remarketing_naperform" },
+            { id: "freesample_new_audience", name: "무료샘플신청 - 신규 - 오디언스", campaign: "free_sample_audience" },
+            { id: "freesample_new_advoost", name: "무료샘플신청 - 신규 - 애드부스트오디언스", campaign: "free_sample_advoost" },
+            { id: "freesample_remarket_audience", name: "무료샘플신청 - 리마케팅 - 오디언스", campaign: "free_remarket_sample_audience" },
+            { id: "freesample_remarket_advoost", name: "무료샘플신청 - 리마케팅 - 애드부스트오디언스", campaign: "free_remarket_sample_advoost" },
             { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "ADVoost_nav_GFA_simtos" }
           ]
         },
@@ -141,7 +143,6 @@ const UTM_DATA = {
           platform: "kakao",
           medium: "kakao_moment_ads",
           defaultSource: "ads",
-          pageScope: ["root", "cat348", "cat404", "cat349", "sampleform", "sampleform_simtos", "notice716"],
           variants: [
             { id: "new", name: "기본 - 신규", campaign: "display_group_newuser_kamom" },
             { id: "remarketing", name: "기본 - 리마케팅", campaign: "display_group_remarketing_kamom" },

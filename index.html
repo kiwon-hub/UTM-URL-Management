@@ -29,15 +29,29 @@
         </div>
       </li>
 
+      <li class="step disabled" id="step-page">
+        <div class="step-head"><span class="step-no">2</span><h2>랜딩 페이지 선택</h2></div>
+        <div class="step-body">
+          <select id="pageSelect" disabled>
+            <option value="" selected disabled>먼저 사이트를 선택하세요</option>
+          </select>
+          <div id="customPageBox" class="hidden">
+            <label for="customPathInput">경로 직접 입력</label>
+            <input type="text" id="customPathInput" placeholder="/product/list.html?cate_no=999" />
+          </div>
+          <div id="fixedPageNote" class="hint hidden"></div>
+        </div>
+      </li>
+
       <li class="step disabled" id="step-platform">
-        <div class="step-head"><span class="step-no">2</span><h2>플랫폼 선택</h2></div>
+        <div class="step-head"><span class="step-no">3</span><h2>플랫폼 선택</h2></div>
         <div class="step-body">
           <div id="platformGroup" class="platform-group"></div>
         </div>
       </li>
 
       <li class="step disabled" id="step-channel">
-        <div class="step-head"><span class="step-no">3</span><h2>광고 종류 선택</h2></div>
+        <div class="step-head"><span class="step-no">4</span><h2>광고 종류 선택 (utm_medium)</h2></div>
         <div class="step-body">
           <select id="channelSelect" disabled>
             <option value="" selected disabled>먼저 플랫폼을 선택하세요</option>
@@ -46,7 +60,7 @@
       </li>
 
       <li class="step disabled" id="step-variant">
-        <div class="step-head"><span class="step-no">4</span><h2>프로젝트 / 목적 선택</h2></div>
+        <div class="step-head"><span class="step-no">5</span><h2>캠페인 선택 (utm_campaign)</h2></div>
         <div class="step-body">
           <p class="hint">여기서 고른 프로젝트가 <code>utm_campaign</code> 값이 됩니다 — "무슨 목적의 광고인지"를 나타내요. 예: <code>free_sample_powerlink</code> (무료샘플신청 프로모션 · 네이버 파워링크)</p>
           <select id="variantSelect" disabled>
@@ -83,20 +97,6 @@
             <input type="text" id="metaCustomInput" placeholder="예: fb_reels" />
           </div>
           <p class="hint" id="metaNote"></p>
-        </div>
-      </li>
-
-      <li class="step disabled" id="step-page">
-        <div class="step-head"><span class="step-no">5</span><h2>랜딩 페이지 선택</h2></div>
-        <div class="step-body">
-          <select id="pageSelect" disabled>
-            <option value="" selected disabled>먼저 프로젝트를 선택하세요</option>
-          </select>
-          <div id="customPageBox" class="hidden">
-            <label for="customPathInput">경로 직접 입력</label>
-            <input type="text" id="customPathInput" placeholder="/product/list.html?cate_no=999" />
-          </div>
-          <div id="fixedPageNote" class="hint hidden"></div>
         </div>
       </li>
 
