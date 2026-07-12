@@ -110,62 +110,33 @@ const UTM_DATA = {
       channels: [
         {
           id: "naver_search",
-          name: "네이버 검색광고 (파워링크)",
+          name: "네이버 검색광고",
           platform: "naver",
           medium: "naver_keyword_ads",
           defaultSource: "ads",
           variants: [
             { id: "basic", name: "기본", campaign: "powerlink_group_nakey" },
-            { id: "basic_remarketing", name: "기본 (리마케팅)", medium: "naver_keyword_ads_remarketing", campaign: "powerlink_nav_key" },
+            { id: "basic_remarketing", name: "기본 - 리마케팅", campaign: "powerlink_remarketing_nakey" },
             { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_powerlink" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", medium: "naver_keyword", campaign: "powerlink_nav_key_simtos" }
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "powerlink_nav_key_simtos" }
           ]
         },
         {
-          id: "naver_perf_awareness",
-          name: "네이버 성과형 (인지도 및 트래픽)",
+          id: "naver_display",
+          name: "네이버 디스플레이 (GFA)",
           platform: "naver",
+          medium: "naver_gfa",
           defaultSource: "ads",
           variants: [
-            { id: "new_audience", name: "신규 - 오디언스", medium: "naver_performance_awarenessandtraffic_new", campaign: "audience_group_new_naperform" },
-            { id: "new_advoost", name: "신규 - 애드부스트오디언스", medium: "naver_performance_awarenessandtraffic_new", campaign: "advoostaudience_group_new_naperform" },
-            { id: "remarket_audience", name: "리마케팅 - 오디언스", medium: "naver_performance_awarenessandtraffic_remarketing", campaign: "audience_group_remarketing_naperform" },
-            { id: "remarket_advoost", name: "리마케팅 - 애드부스트오디언스", medium: "naver_performance_awarenessandtraffic_remarketing", campaign: "advoostaudience_group_remarketing_naperform" }
-          ]
-        },
-        {
-          id: "naver_perf_conversion",
-          name: "네이버 성과형 (웹사이트 전환)",
-          platform: "naver",
-          defaultSource: "ads",
-          variants: [
-            { id: "new_audience", name: "신규 - 오디언스", medium: "naver_performance_websiteconversions_new", campaign: "audience_group_new_naperform" },
-            { id: "new_advoost", name: "신규 - 애드부스트오디언스", medium: "naver_performance_websiteconversions_new", campaign: "advoostaudience_group_new_naperform" },
-            { id: "remarket_audience", name: "리마케팅 - 오디언스", medium: "naver_performance_websiteconversions_remarketing", campaign: "audience_group_remarketing_naperform" },
-            { id: "remarket_advoost", name: "리마케팅 - 애드부스트오디언스", medium: "naver_performance_websiteconversions_remarketing", campaign: "advoostaudience_group_remarketing_naperform" }
-          ]
-        },
-        {
-          id: "naver_perf_freesample",
-          name: "네이버 디스플레이 (무료샘플신청 프로모션)",
-          platform: "naver",
-          medium: "naver_performance_ads",
-          defaultSource: "ads",
-          variants: [
-            { id: "new_audience", name: "신규 - 오디언스", campaign: "free_sample_audience" },
-            { id: "new_advoost", name: "신규 - 애드부스트오디언스", campaign: "free_sample_advoost" },
-            { id: "remarket_audience", name: "리마케팅 - 오디언스", campaign: "free_remarket_sample_audience" },
-            { id: "remarket_advoost", name: "리마케팅 - 애드부스트오디언스", campaign: "free_remarket_sample_advoost" }
-          ]
-        },
-        {
-          id: "naver_gfa_simtos",
-          name: "네이버 성과형 GFA (심토스 전시회)",
-          platform: "naver",
-          medium: "naver_GFA",
-          defaultSource: "simtos",
-          variants: [
-            { id: "simtos", name: "심토스 전시회", campaign: "ADVoost_nav_GFA_simtos" }
+            { id: "new_audience", name: "신규 - 오디언스", campaign: "audience_group_new_naperform" },
+            { id: "new_advoost", name: "신규 - 애드부스트오디언스", campaign: "advoostaudience_group_new_naperform" },
+            { id: "remarket_audience", name: "리마케팅 - 오디언스", campaign: "audience_group_remarketing_naperform" },
+            { id: "remarket_advoost", name: "리마케팅 - 애드부스트오디언스", campaign: "advoostaudience_group_remarketing_naperform" },
+            { id: "freesample_new_audience", name: "무료샘플신청 - 신규 - 오디언스", campaign: "free_sample_audience" },
+            { id: "freesample_new_advoost", name: "무료샘플신청 - 신규 - 애드부스트오디언스", campaign: "free_sample_advoost" },
+            { id: "freesample_remarket_audience", name: "무료샘플신청 - 리마케팅 - 오디언스", campaign: "free_remarket_sample_audience" },
+            { id: "freesample_remarket_advoost", name: "무료샘플신청 - 리마케팅 - 애드부스트오디언스", campaign: "free_remarket_sample_advoost" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "ADVoost_nav_GFA_simtos" }
           ]
         },
         {
