@@ -3,7 +3,10 @@
  * 기원엠알오(kiwonmro.com) / 기원툴스(kiwontools.com) 기존 UTM 대장(엑셀)을 기반으로 만든 데이터.
  * - platform: 광고 플랫폼 단위 (구글/네이버/카카오/메타/오프라인). 채널을 고르기 전에 먼저 선택한다.
  * - channel: 플랫폼 안의 광고 종류 단위. utm_medium은 채널에 고정된다 (요구사항 2: 기존과 동일하게 유지).
- * - variant: 채널 안에서 목적/프로젝트 단위. utm_campaign은 variant에 따라 달라진다 (요구사항 2: 프로젝트에 따라 캠페인만 수정).
+ *   channel.code는 utm_campaign 끝에 항상 붙는 플랫폼+매체 코드(예: 네이버 키워드=nakey).
+ *   기존 대장에서 "nakey" 같은 접미사가 이미 이런 용도로 쓰이고 있어, 모든 채널에 필수로 확장했다.
+ * - variant: 채널 안에서 목적/프로젝트 단위. utm_campaign은 variant에 따라 달라진다.
+ *   campaign 값은 "{목적}_{세부구분}_{채널코드}" 형식을 따른다 (예: freesample_nakey, simtos_new_kamom).
  *   variant.source가 없으면 channel의 defaultSource를 사용한다.
  * - pages: 사이트별 랜딩 페이지 프리셋 (기존 대장에 실제 쓰인 경로들).
  */
@@ -42,10 +45,11 @@ const UTM_DATA = {
           platform: "kakao",
           medium: "kakao_keyword",
           defaultSource: "ads",
+          code: "kakey",
           variants: [
-            { id: "selling", name: "구매된 키워드", campaign: "selling_group_kakey" },
-            { id: "general", name: "일반 키워드", campaign: "general_group_kakey" },
-            { id: "conversion", name: "전환된 키워드", campaign: "conversion_group_kakey" }
+            { id: "selling", name: "구매된 키워드", campaign: "selling_kakey" },
+            { id: "general", name: "일반 키워드", campaign: "general_kakey" },
+            { id: "conversion", name: "전환된 키워드", campaign: "conversion_kakey" }
           ]
         },
         {
@@ -54,9 +58,10 @@ const UTM_DATA = {
           platform: "naver",
           medium: "naver_keyword_ads",
           defaultSource: "ads",
+          code: "nakey",
           variants: [
-            { id: "endmill", name: "엔드밀 그룹", campaign: "powerlink_endmill_group_nakey" },
-            { id: "chuck", name: "척 그룹", campaign: "powerlink_chuck_group_nakey" }
+            { id: "endmill", name: "엔드밀 그룹", campaign: "endmill_nakey" },
+            { id: "chuck", name: "척 그룹", campaign: "chuck_nakey" }
           ]
         },
         {
@@ -65,16 +70,17 @@ const UTM_DATA = {
           platform: "naver",
           medium: "naver_keyword_ads",
           defaultSource: "ads",
+          code: "napc",
           fixedPagePerVariant: true,
           hasContentDate: true,
           variants: [
-            { id: "gloves", name: "장갑류", campaign: "powercontents_gloves_group_nakey", page: "cat75", content: "20250907" },
-            { id: "mask", name: "마스크류", campaign: "powecontents_mask_group_nakey", page: "cat76", content: "20250914" },
-            { id: "glasses", name: "보안경류", campaign: "powecontents_glasses_group_nakey", page: "cat296", content: "20250910" },
-            { id: "cleaning", name: "청소위생용품류", campaign: "powecontents_cleaningsupplies_group_nakey", page: "cat110", content: "20250918" },
-            { id: "binding", name: "포장용품류", campaign: "powecontents_bindingproducts_group_nakey", page: "cat119", content: "20250918" },
-            { id: "welding", name: "연마용접부품", campaign: "powecontents_weldingproducts_group_nakey", page: "cat128", content: "20250926" },
-            { id: "antifriction", name: "방청윤활제", campaign: "powecontents_antifriction_group_nakey", page: "cat145", content: "20251002" }
+            { id: "gloves", name: "장갑류", campaign: "gloves_napc", page: "cat75", content: "20250907" },
+            { id: "mask", name: "마스크류", campaign: "mask_napc", page: "cat76", content: "20250914" },
+            { id: "glasses", name: "보안경류", campaign: "glasses_napc", page: "cat296", content: "20250910" },
+            { id: "cleaning", name: "청소위생용품류", campaign: "cleaning_napc", page: "cat110", content: "20250918" },
+            { id: "binding", name: "포장용품류", campaign: "binding_napc", page: "cat119", content: "20250918" },
+            { id: "welding", name: "연마용접부품", campaign: "welding_napc", page: "cat128", content: "20250926" },
+            { id: "antifriction", name: "방청윤활제", campaign: "antifriction_napc", page: "cat145", content: "20251002" }
           ]
         }
       ]
@@ -112,11 +118,12 @@ const UTM_DATA = {
           platform: "naver",
           medium: "naver_keyword_ads",
           defaultSource: "ads",
+          code: "nakey",
           variants: [
-            { id: "basic", name: "기본", campaign: "powerlink_group_nakey" },
-            { id: "basic_remarketing", name: "기본 - 리마케팅", campaign: "powerlink_remarketing_nakey" },
-            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_powerlink" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "powerlink_nav_key_simtos" }
+            { id: "basic", name: "기본", campaign: "basic_nakey" },
+            { id: "basic_remarketing", name: "기본 - 리마케팅", campaign: "basic_remarketing_nakey" },
+            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_nakey" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_nakey" }
           ]
         },
         {
@@ -125,16 +132,17 @@ const UTM_DATA = {
           platform: "naver",
           medium: "naver_gfa",
           defaultSource: "ads",
+          code: "nagfa",
           variants: [
-            { id: "new_audience", name: "기본 - 신규 - 오디언스", campaign: "audience_group_new_naperform" },
-            { id: "new_advoost", name: "기본 - 신규 - 애드부스트오디언스", campaign: "advoostaudience_group_new_naperform" },
-            { id: "remarket_audience", name: "기본 - 리마케팅 - 오디언스", campaign: "audience_group_remarketing_naperform" },
-            { id: "remarket_advoost", name: "기본 - 리마케팅 - 애드부스트오디언스", campaign: "advoostaudience_group_remarketing_naperform" },
-            { id: "freesample_new_audience", name: "무료샘플신청 - 신규 - 오디언스", campaign: "free_sample_audience" },
-            { id: "freesample_new_advoost", name: "무료샘플신청 - 신규 - 애드부스트오디언스", campaign: "free_sample_advoost" },
-            { id: "freesample_remarket_audience", name: "무료샘플신청 - 리마케팅 - 오디언스", campaign: "free_remarket_sample_audience" },
-            { id: "freesample_remarket_advoost", name: "무료샘플신청 - 리마케팅 - 애드부스트오디언스", campaign: "free_remarket_sample_advoost" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "ADVoost_nav_GFA_simtos" }
+            { id: "new_audience", name: "기본 - 신규 - 오디언스", campaign: "basic_new_aud_nagfa" },
+            { id: "new_advoost", name: "기본 - 신규 - 애드부스트오디언스", campaign: "basic_new_adv_nagfa" },
+            { id: "remarket_audience", name: "기본 - 리마케팅 - 오디언스", campaign: "basic_remarketing_aud_nagfa" },
+            { id: "remarket_advoost", name: "기본 - 리마케팅 - 애드부스트오디언스", campaign: "basic_remarketing_adv_nagfa" },
+            { id: "freesample_new_audience", name: "무료샘플신청 - 신규 - 오디언스", campaign: "freesample_new_aud_nagfa" },
+            { id: "freesample_new_advoost", name: "무료샘플신청 - 신규 - 애드부스트오디언스", campaign: "freesample_new_adv_nagfa" },
+            { id: "freesample_remarket_audience", name: "무료샘플신청 - 리마케팅 - 오디언스", campaign: "freesample_remarketing_aud_nagfa" },
+            { id: "freesample_remarket_advoost", name: "무료샘플신청 - 리마케팅 - 애드부스트오디언스", campaign: "freesample_remarketing_adv_nagfa" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_nagfa" }
           ]
         },
         {
@@ -143,15 +151,16 @@ const UTM_DATA = {
           platform: "kakao",
           medium: "kakao_moment_ads",
           defaultSource: "ads",
+          code: "kamom",
           variants: [
-            { id: "new", name: "기본 - 신규", campaign: "display_group_newuser_kamom" },
-            { id: "remarketing", name: "기본 - 리마케팅", campaign: "display_group_remarketing_kamom" },
-            { id: "freesample_new", name: "무료샘플신청 - 신규", campaign: "free_sample_moment" },
-            { id: "freesample_remarketing", name: "무료샘플신청 - 리마케팅", campaign: "free_remarket_sample_moment" },
-            { id: "simtos_new", name: "심토스 - 신규", source: "simtos", campaign: "display_newuser_ka_mom_simtos" },
-            { id: "simtos_remarketing", name: "심토스 - 리마케팅", source: "simtos", campaign: "display_remarket_ka_mom_simtos" },
-            { id: "display_freesample", name: "디스플레이 배너 - 무료샘플신청", campaign: "free_sample_display" },
-            { id: "bizboard_freesample", name: "비즈보드 - 무료샘플신청", campaign: "free_sample_bizboard" }
+            { id: "new", name: "기본 - 신규", campaign: "basic_new_kamom" },
+            { id: "remarketing", name: "기본 - 리마케팅", campaign: "basic_remarketing_kamom" },
+            { id: "freesample_new", name: "무료샘플신청 - 신규", campaign: "freesample_new_kamom" },
+            { id: "freesample_remarketing", name: "무료샘플신청 - 리마케팅", campaign: "freesample_remarketing_kamom" },
+            { id: "simtos_new", name: "심토스 - 신규", source: "simtos", campaign: "simtos_new_kamom" },
+            { id: "simtos_remarketing", name: "심토스 - 리마케팅", source: "simtos", campaign: "simtos_remarketing_kamom" },
+            { id: "display_freesample", name: "디스플레이 배너 - 무료샘플신청", campaign: "freesample_display_kamom" },
+            { id: "bizboard_freesample", name: "비즈보드 - 무료샘플신청", campaign: "freesample_bizboard_kamom" }
           ]
         },
         {
@@ -160,9 +169,10 @@ const UTM_DATA = {
           platform: "kakao",
           medium: "kakao_keyword_ads",
           defaultSource: "ads",
+          code: "kakey",
           variants: [
-            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_keyword" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "keyword_ka_key_simtos" }
+            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_kakey" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_kakey" }
           ]
         },
         {
@@ -171,9 +181,10 @@ const UTM_DATA = {
           platform: "google",
           medium: "google_ads",
           defaultSource: "ads",
+          code: "gakey",
           variants: [
-            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_search" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "Assets_google_ads_simtos" }
+            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_gakey" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_gakey" }
           ]
         },
         {
@@ -182,9 +193,10 @@ const UTM_DATA = {
           platform: "meta",
           medium: "meta_facebook_ads",
           defaultSource: "ads",
+          code: "mefb",
           variants: [
-            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_meta" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "post_meta_ads_simtos" }
+            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_mefb" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_mefb" }
           ]
         },
         {
@@ -193,9 +205,10 @@ const UTM_DATA = {
           platform: "meta",
           medium: "meta_instagram_ads",
           defaultSource: "ads",
+          code: "meig",
           variants: [
-            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_meta" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "post_meta_ads_simtos" }
+            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_meig" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_meig" }
           ]
         },
         {
@@ -204,10 +217,11 @@ const UTM_DATA = {
           platform: "meta",
           medium: "meta_ads",
           defaultSource: "ads",
+          code: "meauto",
           isMeta: true,
           variants: [
-            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_meta" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "post_meta_ads_simtos" }
+            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_meauto" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_meauto" }
           ]
         },
         {
@@ -216,9 +230,10 @@ const UTM_DATA = {
           platform: "offline",
           medium: "offline_qr",
           defaultSource: "kiwontools",
+          code: "ofqr",
           variants: [
-            { id: "main", name: "홈페이지 사은품 QR", campaign: "mainpage_qr", page: "root" },
-            { id: "simtos_sample", name: "심토스 현장 샘플신청 QR", source: "simtos", campaign: "sample_order_qr", page: "sampleform_simtos" }
+            { id: "main", name: "홈페이지 사은품 QR", campaign: "mainpage_ofqr", page: "root" },
+            { id: "simtos_sample", name: "심토스 현장 샘플신청 QR", source: "simtos", campaign: "simtos_ofqr", page: "sampleform_simtos" }
           ]
         }
       ]

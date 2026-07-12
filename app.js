@@ -24,6 +24,7 @@
   const customVariantBox = el("customVariantBox");
   const customBaseSelect = el("customBaseSelect");
   const customCampaignInput = el("customCampaignInput");
+  const customCampaignSuffix = el("customCampaignSuffix");
   const customCampaignHint = el("customCampaignHint");
   const lockedSource = el("lockedSource");
   const lockedMedium = el("lockedMedium");
@@ -46,6 +47,7 @@
   const clearHistoryBtn = el("clearHistoryBtn");
 
   const stepPlatform = el("step-platform");
+  const stepSource = el("step-source");
   const stepChannel = el("step-channel");
   const stepVariant = el("step-variant");
   const stepPage = el("step-page");
@@ -107,6 +109,8 @@
     lockedSource.value = "ads";
     lockedMedium.value = "";
     clearResult();
+
+    stepSource.classList.add("disabled");
 
     if (!state.site) {
       stepPlatform.classList.add("disabled");
@@ -186,6 +190,7 @@
     lockedSource.value = "ads";
     lockedMedium.value = "";
 
+    stepSource.classList.remove("disabled");
     stepChannel.classList.remove("disabled");
     channelSelect.disabled = false;
     channelSelect.innerHTML = `<option value="" selected disabled>광고 종류를 선택하세요</option>`;
@@ -271,7 +276,8 @@
         medium: baseVariant.medium,
         campaign: null
       };
-      customCampaignHint.textContent = `참고 형식 (기존 캠페인 예시): ${baseVariant.campaign}`;
+      customCampaignSuffix.textContent = `_${state.channel.code}`;
+      customCampaignHint.textContent = `"${state.channel.code}"는 이 채널의 고정 코드라 자동으로 붙습니다. 예: winter_promo → winter_promo_${state.channel.code}. 참고로 같은 채널의 기존 캠페인은 ${baseVariant.campaign} 입니다.`;
     } else {
       state.variant = state.channel.variants.find((v) => v.id === val) || null;
     }
@@ -287,7 +293,7 @@
     if (!baseVariant) return;
     state.variant.source = baseVariant.source;
     state.variant.medium = baseVariant.medium;
-    customCampaignHint.textContent = `참고 형식 (기존 캠페인 예시): ${baseVariant.campaign}`;
+    customCampaignHint.textContent = `"${state.channel.code}"는 이 채널의 고정 코드라 자동으로 붙습니다. 참고로 같은 채널의 기존 캠페인은 ${baseVariant.campaign} 입니다.`;
     updateLockedFields();
     setupPageStep();
     refreshResult();
@@ -353,7 +359,11 @@
 
   function getCampaignValue() {
     if (!state.variant) return "";
-    if (state.variant.id === CUSTOM_VARIANT_ID) return customCampaignInput.value.trim();
+    if (state.variant.id === CUSTOM_VARIANT_ID) {
+      const base = customCampaignInput.value.trim();
+      if (!base) return "";
+      return `${base}_${state.channel.code}`;
+    }
     return state.variant.campaign;
   }
 
