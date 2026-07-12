@@ -56,6 +56,12 @@
           <select id="channelSelect" disabled>
             <option value="" selected disabled>먼저 플랫폼을 선택하세요</option>
           </select>
+          <div class="locked-row">
+            <div class="locked-field">
+              <label>utm_medium <span class="lock">🔒 기존값 유지</span></label>
+              <input type="text" id="lockedMedium" readonly />
+            </div>
+          </div>
         </div>
       </li>
 
@@ -77,10 +83,6 @@
             <div class="locked-field">
               <label>utm_source <span class="lock">🔒 기존값 유지</span></label>
               <input type="text" id="lockedSource" readonly />
-            </div>
-            <div class="locked-field">
-              <label>utm_medium <span class="lock">🔒 기존값 유지</span></label>
-              <input type="text" id="lockedMedium" readonly />
             </div>
           </div>
         </div>

@@ -181,6 +181,8 @@
     state.content = "";
     clearResult();
     resetPageOverride();
+    lockedSource.value = "";
+    lockedMedium.value = "";
 
     stepChannel.classList.remove("disabled");
     channelSelect.disabled = false;
@@ -205,12 +207,16 @@
     state.content = "";
     clearResult();
     resetPageOverride();
+    lockedSource.value = "";
+    lockedMedium.value = "";
 
     if (!state.channel) {
       stepVariant.classList.add("disabled");
       stepMeta.style.display = "none";
       return;
     }
+
+    lockedMedium.value = state.channel.medium || "";
 
     stepVariant.classList.remove("disabled");
     variantSelect.disabled = false;
@@ -238,9 +244,6 @@
       metaPlacementSelect.value = "none";
       onMetaPlacementChange();
     }
-
-    lockedSource.value = "";
-    lockedMedium.value = "";
   }
 
   function onVariantChange() {
@@ -287,12 +290,11 @@
     refreshResult();
   }
 
+  // utm_medium은 채널 선택 시점(onChannelChange)에 이미 고정되므로 여기서는 utm_source만 갱신한다.
+  // utm_source는 프로젝트(예: 심토스 전시회)에 따라 채널의 기본값을 덮어쓸 수 있어 캠페인 선택 시점에만 확정된다.
   function updateLockedFields() {
     if (!state.channel || !state.variant) return;
-    const source = state.variant.source || state.channel.defaultSource || "";
-    const medium = state.variant.medium || state.channel.medium || "";
-    lockedSource.value = source;
-    lockedMedium.value = medium;
+    lockedSource.value = state.variant.source || state.channel.defaultSource || "";
   }
 
   function onMetaPlacementChange() {
