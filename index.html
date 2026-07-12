@@ -10,6 +10,10 @@
 <body>
 <header class="topbar">
   <h1>UTM URL 관리</h1>
+  <span class="source-badge" title="utm_source는 대부분 ads로 고정이며, 심토스 전시회 등 일부 캠페인에서만 자동으로 바뀝니다.">
+    utm_source <span class="lock">🔒</span>
+    <input type="text" id="lockedSource" readonly value="ads" />
+  </span>
   <nav class="tabs" role="tablist">
     <button class="tab-btn active" data-tab="builder" role="tab" aria-selected="true">URL 생성</button>
     <button class="tab-btn" data-tab="guide" role="tab" aria-selected="false">가이드 (메타 FB/IG 등)</button>
@@ -78,12 +82,6 @@
             <label for="customCampaignInput" style="margin-top:10px;">새 캠페인 값 직접 입력</label>
             <input type="text" id="customCampaignInput" placeholder="예: winter_promo_group_nakey" />
             <p class="hint" id="customCampaignHint"></p>
-          </div>
-          <div class="locked-row">
-            <div class="locked-field">
-              <label>utm_source <span class="lock">🔒 기존값 유지</span></label>
-              <input type="text" id="lockedSource" readonly />
-            </div>
           </div>
         </div>
       </li>

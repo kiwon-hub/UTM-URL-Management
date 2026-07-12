@@ -104,6 +104,8 @@
     fixedPageNote.classList.add("hidden");
     contentInput.value = "";
     state.content = "";
+    lockedSource.value = "ads";
+    lockedMedium.value = "";
     clearResult();
 
     if (!state.site) {
@@ -181,7 +183,7 @@
     state.content = "";
     clearResult();
     resetPageOverride();
-    lockedSource.value = "";
+    lockedSource.value = "ads";
     lockedMedium.value = "";
 
     stepChannel.classList.remove("disabled");
@@ -207,7 +209,7 @@
     state.content = "";
     clearResult();
     resetPageOverride();
-    lockedSource.value = "";
+    lockedSource.value = "ads";
     lockedMedium.value = "";
 
     if (!state.channel) {
@@ -216,6 +218,7 @@
       return;
     }
 
+    lockedSource.value = state.channel.defaultSource || "ads";
     lockedMedium.value = state.channel.medium || "";
 
     stepVariant.classList.remove("disabled");
