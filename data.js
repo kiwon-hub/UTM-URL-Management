@@ -128,75 +128,78 @@ const UTM_DATA = {
           medium: "naver_gfa",
           defaultSource: "ads",
           variants: [
-            { id: "new_audience", name: "신규 - 오디언스", campaign: "audience_group_new_naperform" },
-            { id: "new_advoost", name: "신규 - 애드부스트오디언스", campaign: "advoostaudience_group_new_naperform" },
-            { id: "remarket_audience", name: "리마케팅 - 오디언스", campaign: "audience_group_remarketing_naperform" },
-            { id: "remarket_advoost", name: "리마케팅 - 애드부스트오디언스", campaign: "advoostaudience_group_remarketing_naperform" },
-            { id: "freesample_new_audience", name: "무료샘플신청 - 신규 - 오디언스", campaign: "free_sample_audience" },
-            { id: "freesample_new_advoost", name: "무료샘플신청 - 신규 - 애드부스트오디언스", campaign: "free_sample_advoost" },
-            { id: "freesample_remarket_audience", name: "무료샘플신청 - 리마케팅 - 오디언스", campaign: "free_remarket_sample_audience" },
-            { id: "freesample_remarket_advoost", name: "무료샘플신청 - 리마케팅 - 애드부스트오디언스", campaign: "free_remarket_sample_advoost" },
+            { id: "new", name: "기본 - 신규", campaign: "audience_group_new_naperform" },
+            { id: "remarketing", name: "기본 - 리마케팅", campaign: "audience_group_remarketing_naperform" },
+            { id: "freesample_new", name: "무료샘플신청 - 신규", campaign: "free_sample_audience" },
+            { id: "freesample_remarketing", name: "무료샘플신청 - 리마케팅", campaign: "free_remarket_sample_audience" },
             { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "ADVoost_nav_GFA_simtos" }
           ]
         },
         {
           id: "kakao_moment",
-          name: "카카오모먼트 디스플레이",
+          name: "카카오모먼트",
           platform: "kakao",
+          medium: "kakao_moment_ads",
           defaultSource: "ads",
           pageScope: ["root", "cat348", "cat404", "cat349", "sampleform", "sampleform_simtos", "notice716"],
           variants: [
-            { id: "new", name: "기본 - 신규", medium: "kakao_moment_newuser", campaign: "display_group_newuser_kamom" },
-            { id: "remarketing", name: "기본 - 리마케팅", medium: "kakao_moment_remarketing", campaign: "display_group_remarketing_kamom" },
-            { id: "freesample_new", name: "무료샘플신청 - 신규", medium: "kakao_moment_ads", campaign: "free_sample_moment" },
-            { id: "freesample_remarketing", name: "무료샘플신청 - 리마케팅", medium: "kakao_moment_ads", campaign: "free_remarket_sample_moment" },
-            { id: "simtos_new", name: "심토스 - 신규", source: "simtos", medium: "kakao_moment_newuser_ads", campaign: "display_newuser_ka_mom_simtos" },
-            { id: "simtos_remarketing", name: "심토스 - 리마케팅", source: "simtos", medium: "kakao_moment_remarket_ads", campaign: "display_remarket_ka_mom_simtos" }
+            { id: "new", name: "기본 - 신규", campaign: "display_group_newuser_kamom" },
+            { id: "remarketing", name: "기본 - 리마케팅", campaign: "display_group_remarketing_kamom" },
+            { id: "freesample_new", name: "무료샘플신청 - 신규", campaign: "free_sample_moment" },
+            { id: "freesample_remarketing", name: "무료샘플신청 - 리마케팅", campaign: "free_remarket_sample_moment" },
+            { id: "simtos_new", name: "심토스 - 신규", source: "simtos", campaign: "display_newuser_ka_mom_simtos" },
+            { id: "simtos_remarketing", name: "심토스 - 리마케팅", source: "simtos", campaign: "display_remarket_ka_mom_simtos" },
+            { id: "display_freesample", name: "디스플레이 배너 - 무료샘플신청", campaign: "free_sample_display" },
+            { id: "bizboard_freesample", name: "비즈보드 - 무료샘플신청", campaign: "free_sample_bizboard" }
           ]
         },
         {
           id: "kakao_keyword",
           name: "카카오 키워드광고",
           platform: "kakao",
+          medium: "kakao_keyword_ads",
           defaultSource: "ads",
           variants: [
-            { id: "freesample", name: "무료샘플신청 프로모션", medium: "kakao_keyword_ads", campaign: "free_sample_keyword" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", medium: "kakao_keyword", campaign: "keyword_ka_key_simtos" }
-          ]
-        },
-        {
-          id: "kakao_display",
-          name: "카카오 디스플레이광고",
-          platform: "kakao",
-          medium: "kakao_display_ads",
-          defaultSource: "ads",
-          variants: [
-            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_display" }
-          ]
-        },
-        {
-          id: "kakao_bizboard",
-          name: "카카오 비즈보드광고",
-          platform: "kakao",
-          medium: "kakao_bizboard_ads",
-          defaultSource: "ads",
-          variants: [
-            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_bizboard" }
+            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_keyword" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "keyword_ka_key_simtos" }
           ]
         },
         {
           id: "google_ads",
           name: "구글 검색광고",
           platform: "google",
+          medium: "google_ads",
           defaultSource: "ads",
           variants: [
-            { id: "freesample", name: "무료샘플신청 프로모션", medium: "google_search_ads", campaign: "free_sample_search" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", medium: "google_ads", campaign: "Assets_google_ads_simtos" }
+            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_search" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "Assets_google_ads_simtos" }
           ]
         },
         {
-          id: "meta_ads",
-          name: "메타 광고 (페이스북/인스타그램)",
+          id: "meta_facebook",
+          name: "메타 - 페이스북",
+          platform: "meta",
+          medium: "meta_facebook_ads",
+          defaultSource: "ads",
+          variants: [
+            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_meta" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "post_meta_ads_simtos" }
+          ]
+        },
+        {
+          id: "meta_instagram",
+          name: "메타 - 인스타그램",
+          platform: "meta",
+          medium: "meta_instagram_ads",
+          defaultSource: "ads",
+          variants: [
+            { id: "freesample", name: "무료샘플신청 프로모션", campaign: "free_sample_meta" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "post_meta_ads_simtos" }
+          ]
+        },
+        {
+          id: "meta_auto",
+          name: "메타 - 자동 배치 (여러 플랫폼)",
           platform: "meta",
           medium: "meta_ads",
           defaultSource: "ads",
