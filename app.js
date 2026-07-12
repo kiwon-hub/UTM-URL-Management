@@ -3,6 +3,7 @@
 
   const state = {
     site: null,
+    platform: null,
     channel: null,
     variant: null,
     customCampaign: "",
@@ -16,6 +17,7 @@
   const el = (id) => document.getElementById(id);
 
   const siteSelect = el("siteSelect");
+  const platformGroup = el("platformGroup");
   const channelSelect = el("channelSelect");
   const variantSelect = el("variantSelect");
   const customVariantBox = el("customVariantBox");
@@ -42,6 +44,7 @@
   const historyList = el("historyList");
   const clearHistoryBtn = el("clearHistoryBtn");
 
+  const stepPlatform = el("step-platform");
   const stepChannel = el("step-channel");
   const stepVariant = el("step-variant");
   const stepPage = el("step-page");
@@ -86,11 +89,12 @@
 
   function onSiteChange() {
     state.site = UTM_DATA.sites.find((s) => s.id === siteSelect.value) || null;
+    state.platform = null;
     state.channel = null;
     state.variant = null;
     state.page = null;
 
-    resetStep(stepVariant, variantSelect, "먼저 채널을 선택하세요");
+    resetStep(stepVariant, variantSelect, "먼저 광고 종류를 선택하세요");
     resetStep(stepPage, pageSelect, "먼저 프로젝트를 선택하세요");
     stepContent.classList.add("disabled");
     stepMeta.style.display = "none";
@@ -100,20 +104,58 @@
     state.content = "";
     clearResult();
 
+    resetStep(stepChannel, channelSelect, "먼저 플랫폼을 선택하세요");
+
     if (!state.site) {
-      resetStep(stepChannel, channelSelect, "먼저 사이트를 선택하세요");
+      stepPlatform.classList.add("disabled");
+      platformGroup.innerHTML = "";
       return;
     }
 
+    stepPlatform.classList.remove("disabled");
+    platformGroup.innerHTML = "";
+    state.site.platforms.forEach((p) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "platform-btn";
+      btn.dataset.platformId = p.id;
+      btn.textContent = p.name;
+      btn.addEventListener("click", () => onPlatformSelect(p.id));
+      platformGroup.appendChild(btn);
+    });
+  }
+
+  function onPlatformSelect(platformId) {
+    state.platform = platformId;
+    state.channel = null;
+    state.variant = null;
+    state.page = null;
+
+    Array.from(platformGroup.children).forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.platformId === platformId);
+    });
+
+    resetStep(stepVariant, variantSelect, "먼저 광고 종류를 선택하세요");
+    resetStep(stepPage, pageSelect, "먼저 프로젝트를 선택하세요");
+    stepContent.classList.add("disabled");
+    stepMeta.style.display = "none";
+    customVariantBox.classList.add("hidden");
+    customPageBox.classList.add("hidden");
+    contentInput.value = "";
+    state.content = "";
+    clearResult();
+
     stepChannel.classList.remove("disabled");
     channelSelect.disabled = false;
-    channelSelect.innerHTML = `<option value="" selected disabled>채널을 선택하세요</option>`;
-    state.site.channels.forEach((ch) => {
-      const opt = document.createElement("option");
-      opt.value = ch.id;
-      opt.textContent = ch.name;
-      channelSelect.appendChild(opt);
-    });
+    channelSelect.innerHTML = `<option value="" selected disabled>광고 종류를 선택하세요</option>`;
+    state.site.channels
+      .filter((ch) => ch.platform === platformId)
+      .forEach((ch) => {
+        const opt = document.createElement("option");
+        opt.value = ch.id;
+        opt.textContent = ch.name;
+        channelSelect.appendChild(opt);
+      });
   }
 
   function onChannelChange() {

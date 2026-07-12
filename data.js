@@ -1,7 +1,8 @@
 /*
  * UTM_DATA
  * 기원엠알오(kiwonmro.com) / 기원툴스(kiwontools.com) 기존 UTM 대장(엑셀)을 기반으로 만든 데이터.
- * - channel: 광고 매체/상품 단위. utm_medium은 채널에 고정된다 (요구사항 2: 기존과 동일하게 유지).
+ * - platform: 광고 플랫폼 단위 (구글/네이버/카카오/메타/오프라인). 채널을 고르기 전에 먼저 선택한다.
+ * - channel: 플랫폼 안의 광고 종류 단위. utm_medium은 채널에 고정된다 (요구사항 2: 기존과 동일하게 유지).
  * - variant: 채널 안에서 목적/프로젝트 단위. utm_campaign은 variant에 따라 달라진다 (요구사항 2: 프로젝트에 따라 캠페인만 수정).
  *   variant.source가 없으면 channel의 defaultSource를 사용한다.
  * - pages: 사이트별 랜딩 페이지 프리셋 (기존 대장에 실제 쓰인 경로들).
@@ -12,6 +13,10 @@ const UTM_DATA = {
       id: "kiwonmro",
       name: "기원엠알오",
       domain: "kiwonmro.com",
+      platforms: [
+        { id: "kakao", name: "카카오" },
+        { id: "naver", name: "네이버" }
+      ],
       pages: [
         { id: "root", name: "메인페이지", path: "/" },
         { id: "cat218", name: "강용엔드밀 카테고리", path: "/product/list.html", params: { cate_no: "218" } },
@@ -34,6 +39,7 @@ const UTM_DATA = {
         {
           id: "kakao_keyword",
           name: "카카오 키워드광고",
+          platform: "kakao",
           medium: "kakao_keyword",
           defaultSource: "ads",
           pageScope: ["root", "cat218", "cat219", "cat220", "prod130", "prod136", "prod231", "prod224", "join"],
@@ -46,6 +52,7 @@ const UTM_DATA = {
         {
           id: "naver_powerlink",
           name: "네이버 검색광고 (파워링크)",
+          platform: "naver",
           medium: "naver_keyword_ads",
           defaultSource: "ads",
           pageScope: ["root"],
@@ -57,6 +64,7 @@ const UTM_DATA = {
         {
           id: "naver_powercontents",
           name: "네이버 검색광고 (파워컨텐츠)",
+          platform: "naver",
           medium: "naver_keyword_ads",
           defaultSource: "ads",
           fixedPagePerVariant: true,
@@ -77,6 +85,13 @@ const UTM_DATA = {
       id: "kiwontools",
       name: "기원툴스",
       domain: "kiwontools.com",
+      platforms: [
+        { id: "naver", name: "네이버" },
+        { id: "kakao", name: "카카오" },
+        { id: "google", name: "구글" },
+        { id: "meta", name: "메타" },
+        { id: "offline", name: "오프라인" }
+      ],
       pages: [
         { id: "root", name: "메인페이지", path: "/" },
         { id: "sampleform", name: "무료샘플 신청페이지", path: "/sampleform.html" },
@@ -96,6 +111,7 @@ const UTM_DATA = {
         {
           id: "naver_search",
           name: "네이버 검색광고 (파워링크)",
+          platform: "naver",
           medium: "naver_keyword_ads",
           defaultSource: "ads",
           variants: [
@@ -108,6 +124,7 @@ const UTM_DATA = {
         {
           id: "naver_perf_awareness",
           name: "네이버 성과형 (인지도 및 트래픽)",
+          platform: "naver",
           defaultSource: "ads",
           variants: [
             { id: "new_audience", name: "신규 - 오디언스", medium: "naver_performance_awarenessandtraffic_new", campaign: "audience_group_new_naperform" },
@@ -119,6 +136,7 @@ const UTM_DATA = {
         {
           id: "naver_perf_conversion",
           name: "네이버 성과형 (웹사이트 전환)",
+          platform: "naver",
           defaultSource: "ads",
           variants: [
             { id: "new_audience", name: "신규 - 오디언스", medium: "naver_performance_websiteconversions_new", campaign: "audience_group_new_naperform" },
@@ -130,6 +148,7 @@ const UTM_DATA = {
         {
           id: "naver_perf_freesample",
           name: "네이버 디스플레이 (무료샘플신청 프로모션)",
+          platform: "naver",
           medium: "naver_performance_ads",
           defaultSource: "ads",
           variants: [
@@ -142,6 +161,7 @@ const UTM_DATA = {
         {
           id: "naver_gfa_simtos",
           name: "네이버 성과형 GFA (심토스 전시회)",
+          platform: "naver",
           medium: "naver_GFA",
           defaultSource: "simtos",
           variants: [
@@ -151,6 +171,7 @@ const UTM_DATA = {
         {
           id: "kakao_moment",
           name: "카카오모먼트 디스플레이",
+          platform: "kakao",
           defaultSource: "ads",
           pageScope: ["root", "cat348", "cat404", "cat349", "sampleform", "sampleform_simtos", "notice716"],
           variants: [
@@ -165,6 +186,7 @@ const UTM_DATA = {
         {
           id: "kakao_keyword",
           name: "카카오 키워드광고",
+          platform: "kakao",
           defaultSource: "ads",
           variants: [
             { id: "freesample", name: "무료샘플신청 프로모션", medium: "kakao_keyword_ads", campaign: "free_sample_keyword" },
@@ -174,6 +196,7 @@ const UTM_DATA = {
         {
           id: "kakao_display",
           name: "카카오 디스플레이광고",
+          platform: "kakao",
           medium: "kakao_display_ads",
           defaultSource: "ads",
           variants: [
@@ -183,6 +206,7 @@ const UTM_DATA = {
         {
           id: "kakao_bizboard",
           name: "카카오 비즈보드광고",
+          platform: "kakao",
           medium: "kakao_bizboard_ads",
           defaultSource: "ads",
           variants: [
@@ -192,6 +216,7 @@ const UTM_DATA = {
         {
           id: "google_ads",
           name: "구글 검색광고",
+          platform: "google",
           defaultSource: "ads",
           variants: [
             { id: "freesample", name: "무료샘플신청 프로모션", medium: "google_search_ads", campaign: "free_sample_search" },
@@ -201,6 +226,7 @@ const UTM_DATA = {
         {
           id: "meta_ads",
           name: "메타 광고 (페이스북/인스타그램)",
+          platform: "meta",
           medium: "meta_ads",
           defaultSource: "ads",
           isMeta: true,
@@ -212,6 +238,7 @@ const UTM_DATA = {
         {
           id: "offline_qr",
           name: "오프라인 QR코드",
+          platform: "offline",
           medium: "offline_qr",
           defaultSource: "kiwontools",
           variants: [
