@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UTM URL 관리 - 기원엠알오 / 기원툴스</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232f6fed'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='sans-serif'%3EU%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <h1>UTM URL 관리</h1>
+  <nav class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="builder" role="tab" aria-selected="true">URL 생성</button>
+    <button class="tab-btn" data-tab="guide" role="tab" aria-selected="false">가이드 (메타 FB/IG 등)</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ 빌더 탭 ============ -->
+  <section id="tab-builder" class="tab-panel active">
+    <ol class="wizard">
+      <li class="step" id="step-site">
+        <div class="step-head"><span class="step-no">1</span><h2>사이트 선택</h2></div>
+        <div class="step-body">
+          <select id="siteSelect">
+            <option value="" selected disabled>사이트를 선택하세요</option>
+          </select>
+        </div>
+      </li>
+
+      <li class="step disabled" id="step-channel">
+        <div class="step-head"><span class="step-no">2</span><h2>광고 채널 선택</h2></div>
+        <div class="step-body">
+          <select id="channelSelect" disabled>
+            <option value="" selected disabled>먼저 사이트를 선택하세요</option>
+          </select>
+        </div>
+      </li>
+
+      <li class="step disabled" id="step-variant">
+        <div class="step-head"><span class="step-no">3</span><h2>프로젝트 / 목적 선택</h2></div>
+        <div class="step-body">
+          <select id="variantSelect" disabled>
+            <option value="" selected disabled>먼저 채널을 선택하세요</option>
+          </select>
+          <div id="customVariantBox" class="hidden">
+            <label for="customBaseSelect">기준으로 삼을 기존 설정 (source/medium 유지)</label>
+            <select id="customBaseSelect"></select>
+            <label for="customCampaignInput" style="margin-top:10px;">새 캠페인 값 직접 입력</label>
+            <input type="text" id="customCampaignInput" placeholder="예: winter_promo_group_nakey" />
+            <p class="hint" id="customCampaignHint"></p>
+          </div>
+          <div class="locked-row">
+            <div class="locked-field">
+              <label>utm_source <span class="lock">🔒 기존값 유지</span></label>
+              <input type="text" id="lockedSource" readonly />
+            </div>
+            <div class="locked-field">
+              <label>utm_medium <span class="lock">🔒 기존값 유지</span></label>
+              <input type="text" id="lockedMedium" readonly />
+            </div>
+          </div>
+        </div>
+      </li>
+
+      <li class="step disabled" id="step-meta" style="display:none;">
+        <div class="step-head"><span class="step-no">•</span><h2>메타 게재위치 (FB / IG 구분)</h2></div>
+        <div class="step-body">
+          <select id="metaPlacementSelect">
+          </select>
+          <div id="metaCustomBox" class="hidden">
+            <label for="metaCustomInput">utm_content 직접 입력</label>
+            <input type="text" id="metaCustomInput" placeholder="예: fb_reels" />
+          </div>
+          <p class="hint" id="metaNote"></p>
+        </div>
+      </li>
+
+      <li class="step disabled" id="step-page">
+        <div class="step-head"><span class="step-no">4</span><h2>랜딩 페이지 선택</h2></div>
+        <div class="step-body">
+          <select id="pageSelect" disabled>
+            <option value="" selected disabled>먼저 프로젝트를 선택하세요</option>
+          </select>
+          <div id="customPageBox" class="hidden">
+            <label for="customPathInput">경로 직접 입력</label>
+            <input type="text" id="customPathInput" placeholder="/product/list.html?cate_no=999" />
+          </div>
+          <div id="fixedPageNote" class="hint hidden"></div>
+        </div>
+      </li>
+
+      <li class="step disabled" id="step-content">
+        <div class="step-head"><span class="step-no">5</span><h2>utm_content (선택)</h2></div>
+        <div class="step-body">
+          <input type="text" id="contentInput" placeholder="예: 20260712 또는 소재명" />
+          <button type="button" id="todayBtn" class="btn-secondary">오늘 날짜 삽입</button>
+        </div>
+      </li>
+    </ol>
+
+    <section class="result" id="resultBox">
+      <h2>생성된 URL</h2>
+      <div class="result-row">
+        <input type="text" id="resultUrl" readonly placeholder="위 단계를 모두 선택하면 URL이 여기에 표시됩니다." />
+        <button type="button" id="copyBtn" class="btn-primary" disabled>복사</button>
+        <button type="button" id="addHistoryBtn" class="btn-primary" disabled>기록에 추가</button>
+      </div>
+      <p class="result-msg" id="resultMsg"></p>
+    </section>
+
+    <section class="history">
+      <div class="history-head">
+        <h2>내가 만든 URL 기록</h2>
+        <button type="button" id="clearHistoryBtn" class="btn-secondary">기록 비우기</button>
+      </div>
+      <p class="hint">이 목록은 지금 이 브라우저에서 직접 생성한 URL만 기록합니다. 전체 조합을 한 번에 보여주는 목록이 아니므로, 원하는 URL을 위 단계에서 다시 선택해 만들어야 합니다.</p>
+      <ul id="historyList" class="history-list"></ul>
+    </section>
+  </section>
+
+  <!-- ============ 가이드 탭 ============ -->
+  <section id="tab-guide" class="tab-panel">
+    <article class="guide">
+      <h2>UTM 파라미터 규칙</h2>
+      <dl>
+        <dt>utm_source</dt><dd>UTM을 만드는 목적(광고주체) — 예: ads(일반 유료광고), simtos(심토스 전시회), kiwontools(오프라인/QR)</dd>
+        <dt>utm_medium</dt><dd>플랫폼 + 광고 유형 + 캠페인 종류 — 예: naver_keyword_ads, kakao_moment_remarketing. <strong>채널이 정해지면 값이 고정되며, 관리 페이지에서 임의로 바꾸지 않습니다.</strong></dd>
+        <dt>utm_campaign</dt><dd>광고그룹 / 목적(프로젝트) — 같은 채널이라도 "기본 / 무료샘플신청 / 심토스 전시회"처럼 프로젝트가 바뀌면 campaign 값만 바뀝니다.</dd>
+        <dt>utm_content</dt><dd>소재 구분 (날짜, 소재명, 게재위치 등). 선택 입력입니다.</dd>
+      </dl>
+
+      <h2>메타(페이스북/인스타그램) 광고 — 매체별로 무엇이 바뀌는가</h2>
+      <p>현재 대장에는 메타 광고가 <code>utm_source=ads</code>(또는 심토스 프로모션일 때 <code>simtos</code>) / <code>utm_medium=meta_ads</code> 로 고정되어 있고, 페이스북과 인스타그램을 구분하지 않았습니다.</p>
+      <p><strong>메타는 utm_source/utm_medium 자체를 자동으로 바꿔주지 않습니다.</strong> 페이스북/인스타그램을 구분하려면 Meta 광고관리자(Ads Manager)의 <em>URL 매개변수</em> 입력란에 아래와 같은 동적 매크로를 넣어 <code>utm_content</code>(또는 utm_term)에 자동으로 값이 채워지도록 해야 합니다.</p>
+      <table class="guide-table">
+        <thead><tr><th>매크로</th><th>치환되는 값</th><th>용도</th></tr></thead>
+        <tbody>
+          <tr><td><code>{{site_source_name}}</code></td><td>fb / ig / an / msg 등</td><td>페이스북·인스타그램·오디언스 네트워크·메신저 구분 (가장 단순)</td></tr>
+          <tr><td><code>{{placement}}</code></td><td>facebook_feed, instagram_story, instagram_reels, instagram_stream 등</td><td>세부 게재 위치까지 구분</td></tr>
+          <tr><td><code>{{campaign.name}}</code></td><td>캠페인명</td><td>캠페인 자동 기록</td></tr>
+          <tr><td><code>{{adset.name}}</code> / <code>{{ad.name}}</code></td><td>광고그룹명 / 소재명</td><td>광고그룹·소재 자동 기록</td></tr>
+        </tbody>
+      </table>
+      <p><strong>권장 방식:</strong> utm_source / utm_medium은 기존 값(ads 또는 simtos / meta_ads)을 그대로 두고, utm_content에 <code>{{site_source_name}}</code> 또는 <code>{{site_source_name}}_{{placement}}</code>를 넣습니다. 이렇게 만든 URL을 그대로 Meta 광고관리자의 "URL 매개변수" 항목에 붙여넣으면, 실제 노출 시 자동으로 fb/ig 값이 채워집니다. "URL 생성" 탭에서 채널을 <strong>메타 광고</strong>로 선택하면 이 옵션을 바로 고를 수 있습니다.</p>
+
+      <h2>이 페이지는 "전체보기"를 제공하지 않습니다</h2>
+      <p>기존 대장을 한 화면에 모두 펼쳐두면 실수로 잘못된 URL을 복사하기 쉽습니다. 그래서 이 페이지는 사이트 → 채널 → 프로젝트 → 페이지 순서로만 골라 URL을 만들도록 제한했고, 만든 URL은 "내가 만든 URL 기록"에만 남습니다.</p>
+    </article>
+  </section>
+</main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
