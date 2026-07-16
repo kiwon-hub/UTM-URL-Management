@@ -130,7 +130,7 @@ const UTM_DATA = {
           id: "naver_display",
           name: "네이버 디스플레이 (GFA)",
           platform: "naver",
-          medium: "naver_gfa",
+          medium: "naver_display",
           defaultSource: "ads",
           code: "nagfa",
           variants: [
