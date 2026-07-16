@@ -26,7 +26,9 @@
   const customCampaignInput = el("customCampaignInput");
   const customCampaignSuffix = el("customCampaignSuffix");
   const customCampaignHint = el("customCampaignHint");
-  const lockedSource = el("lockedSource");
+  const sourceSelect = el("sourceSelect");
+  const customSourceBox = el("customSourceBox");
+  const customSourceInput = el("customSourceInput");
   const lockedMedium = el("lockedMedium");
   const stepMeta = el("step-meta");
   const metaPlacementSelect = el("metaPlacementSelect");
@@ -55,7 +57,26 @@
 
   const CUSTOM_VARIANT_ID = "__custom__";
   const CUSTOM_PAGE_ID = "__custom__";
+  const CUSTOM_SOURCE_ID = "__custom__";
+  const SOURCE_PRESETS = ["ads", "simtos", "kiwontools"];
   const HISTORY_KEY = "utm_history_v1";
+
+  // 채널/캠페인이 계산한 기본값으로 소스 선택을 맞춰준다. 이후에도 사용자가 직접 다른 값으로 바꿀 수 있다.
+  function setSourceValue(value) {
+    if (SOURCE_PRESETS.includes(value)) {
+      sourceSelect.value = value;
+      customSourceBox.classList.add("hidden");
+    } else {
+      sourceSelect.value = CUSTOM_SOURCE_ID;
+      customSourceInput.value = value || "";
+      customSourceBox.classList.remove("hidden");
+    }
+  }
+
+  function getSourceValue() {
+    if (sourceSelect.value === CUSTOM_SOURCE_ID) return customSourceInput.value.trim();
+    return sourceSelect.value;
+  }
 
   function qsEncode(value) {
     if (typeof value === "string" && value.indexOf("{{") !== -1) return value;
@@ -106,7 +127,7 @@
     fixedPageNote.classList.add("hidden");
     contentInput.value = "";
     state.content = "";
-    lockedSource.value = "ads";
+    setSourceValue("ads");
     lockedMedium.value = "";
     clearResult();
 
@@ -187,7 +208,7 @@
     state.content = "";
     clearResult();
     resetPageOverride();
-    lockedSource.value = "ads";
+    setSourceValue("ads");
     lockedMedium.value = "";
 
     stepSource.classList.remove("disabled");
@@ -214,7 +235,7 @@
     state.content = "";
     clearResult();
     resetPageOverride();
-    lockedSource.value = "ads";
+    setSourceValue("ads");
     lockedMedium.value = "";
 
     if (!state.channel) {
@@ -223,7 +244,7 @@
       return;
     }
 
-    lockedSource.value = state.channel.defaultSource || "ads";
+    setSourceValue(state.channel.defaultSource || "ads");
     lockedMedium.value = state.channel.medium || "";
 
     stepVariant.classList.remove("disabled");
@@ -282,7 +303,7 @@
       state.variant = state.channel.variants.find((v) => v.id === val) || null;
     }
 
-    updateLockedFields();
+    updateSourceDefault();
     setupPageStep();
     clearResult();
   }
@@ -294,16 +315,16 @@
     state.variant.source = baseVariant.source;
     state.variant.medium = baseVariant.medium;
     customCampaignHint.textContent = `"${state.channel.code}"는 이 채널의 고정 코드라 자동으로 붙습니다. 참고로 같은 채널의 기존 캠페인은 ${baseVariant.campaign} 입니다.`;
-    updateLockedFields();
+    updateSourceDefault();
     setupPageStep();
     refreshResult();
   }
 
-  // utm_medium은 채널 선택 시점(onChannelChange)에 이미 고정되므로 여기서는 utm_source만 갱신한다.
-  // utm_source는 프로젝트(예: 심토스 전시회)에 따라 채널의 기본값을 덮어쓸 수 있어 캠페인 선택 시점에만 확정된다.
-  function updateLockedFields() {
+  // utm_medium은 채널 선택 시점(onChannelChange)에 이미 고정되므로 여기서는 utm_source 기본값만 갱신한다.
+  // utm_source는 프로젝트(예: 심토스 전시회)에 따라 채널의 기본값을 덮어쓸 수 있고, 사용자가 4번에서 직접 다른 값으로 바꿀 수도 있다.
+  function updateSourceDefault() {
     if (!state.channel || !state.variant) return;
-    lockedSource.value = state.variant.source || state.channel.defaultSource || "";
+    setSourceValue(state.variant.source || state.channel.defaultSource || "ads");
   }
 
   function onMetaPlacementChange() {
@@ -403,7 +424,7 @@
     const pathInfo = getPathAndParams();
     if (!pathInfo) return null;
 
-    const source = state.variant.source || state.channel.defaultSource || "";
+    const source = getSourceValue();
     const medium = state.variant.medium || state.channel.medium || "";
     if (!source || !medium) return null;
 
@@ -502,6 +523,11 @@
 
   // ---- 이벤트 바인딩 ----
   siteSelect.addEventListener("change", onSiteChange);
+  sourceSelect.addEventListener("change", () => {
+    customSourceBox.classList.toggle("hidden", sourceSelect.value !== CUSTOM_SOURCE_ID);
+    refreshResult();
+  });
+  customSourceInput.addEventListener("input", refreshResult);
   channelSelect.addEventListener("change", onChannelChange);
   variantSelect.addEventListener("change", onVariantChange);
   customBaseSelect.addEventListener("change", onCustomBaseChange);

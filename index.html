@@ -51,14 +51,18 @@
       </li>
 
       <li class="step disabled" id="step-source">
-        <div class="step-head"><span class="step-no">4</span><h2>utm_source 확인</h2></div>
+        <div class="step-head"><span class="step-no">4</span><h2>utm_source 선택</h2></div>
         <div class="step-body">
-          <p class="hint">대부분 <code>ads</code>로 고정되고, 심토스 전시회 등 일부 캠페인에서만 자동으로 바뀝니다. 5·6번 선택에 따라 아래 값이 갱신됩니다.</p>
-          <div class="locked-row">
-            <div class="locked-field">
-              <label>utm_source <span class="lock">🔒 기존값 유지</span></label>
-              <input type="text" id="lockedSource" readonly value="ads" />
-            </div>
+          <p class="hint">대부분 <code>ads</code>가 기본값이고, 심토스 전시회 등 일부 캠페인은 5·6번 선택에 따라 자동으로 바뀝니다. 다른 유형의 UTM이 필요하면 직접 선택하거나 입력할 수 있습니다.</p>
+          <select id="sourceSelect">
+            <option value="ads">ads (일반 유료광고)</option>
+            <option value="simtos">simtos (심토스 전시회)</option>
+            <option value="kiwontools">kiwontools (자사 오프라인/QR)</option>
+            <option value="__custom__">+ 직접 입력</option>
+          </select>
+          <div id="customSourceBox" class="hidden">
+            <label for="customSourceInput">utm_source 직접 입력</label>
+            <input type="text" id="customSourceInput" placeholder="예: email, partner, organic" />
           </div>
         </div>
       </li>
