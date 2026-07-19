@@ -5,14 +5,11 @@
     site: null,
     platform: null,
     channel: null,
-    variant: null,
-    customCampaign: "",
+    selectedCampaign: null, // 캠페인+그룹 2단계 채널에서만 쓰는 "캠페인(목적)" 선택값
+    variant: null, // 최종 선택 항목 (variant 또는 group과 동일한 모양)
     metaPlacement: null,
-    metaCustom: "",
     page: null,
-    userPageId: null,
-    customPath: "",
-    content: ""
+    userPageId: null
   };
 
   const el = (id) => document.getElementById(id);
@@ -21,6 +18,7 @@
   const platformGroup = el("platformGroup");
   const channelSelect = el("channelSelect");
   const variantSelect = el("variantSelect");
+  const groupSelect = el("groupSelect");
   const customVariantBox = el("customVariantBox");
   const customBaseSelect = el("customBaseSelect");
   const customCampaignInput = el("customCampaignInput");
@@ -38,8 +36,6 @@
   const customPageBox = el("customPageBox");
   const customPathInput = el("customPathInput");
   const fixedPageNote = el("fixedPageNote");
-  const contentInput = el("contentInput");
-  const todayBtn = el("todayBtn");
   const resultUrl = el("resultUrl");
   const copyBtn = el("copyBtn");
   const addHistoryBtn = el("addHistoryBtn");
@@ -51,8 +47,8 @@
   const stepSource = el("step-source");
   const stepChannel = el("step-channel");
   const stepVariant = el("step-variant");
+  const stepGroup = el("step-group");
   const stepPage = el("step-page");
-  const stepContent = el("step-content");
 
   const CUSTOM_VARIANT_ID = "__custom__";
   const CUSTOM_PAGE_ID = "__custom__";
@@ -114,18 +110,18 @@
     state.site = UTM_DATA.sites.find((s) => s.id === siteSelect.value) || null;
     state.platform = null;
     state.channel = null;
+    state.selectedCampaign = null;
     state.variant = null;
     state.page = null;
 
     resetStep(stepVariant, variantSelect, "먼저 광고 종류를 선택하세요");
     resetStep(stepChannel, channelSelect, "먼저 플랫폼을 선택하세요");
-    stepContent.classList.add("disabled");
+    resetStep(stepGroup, groupSelect, "먼저 캠페인을 선택하세요");
+    stepGroup.style.display = "none";
     stepMeta.style.display = "none";
     customVariantBox.classList.add("hidden");
     customPageBox.classList.add("hidden");
     fixedPageNote.classList.add("hidden");
-    contentInput.value = "";
-    state.content = "";
     setSourceValue("ads");
     lockedMedium.value = "";
     clearResult();
@@ -193,6 +189,7 @@
   function onPlatformSelect(platformId) {
     state.platform = platformId;
     state.channel = null;
+    state.selectedCampaign = null;
     state.variant = null;
 
     Array.from(platformGroup.children).forEach((btn) => {
@@ -200,11 +197,10 @@
     });
 
     resetStep(stepVariant, variantSelect, "먼저 광고 종류를 선택하세요");
-    stepContent.classList.add("disabled");
+    resetStep(stepGroup, groupSelect, "먼저 캠페인을 선택하세요");
+    stepGroup.style.display = "none";
     stepMeta.style.display = "none";
     customVariantBox.classList.add("hidden");
-    contentInput.value = "";
-    state.content = "";
     clearResult();
     resetPageOverride();
     setSourceValue("ads");
@@ -226,16 +222,16 @@
 
   function onChannelChange() {
     state.channel = state.site.channels.find((c) => c.id === channelSelect.value) || null;
+    state.selectedCampaign = null;
     state.variant = null;
 
-    stepContent.classList.add("disabled");
     customVariantBox.classList.add("hidden");
-    contentInput.value = "";
-    state.content = "";
     clearResult();
     resetPageOverride();
     setSourceValue("ads");
     lockedMedium.value = "";
+    resetStep(stepGroup, groupSelect, "먼저 캠페인을 선택하세요");
+    stepGroup.style.display = "none";
 
     if (!state.channel) {
       stepVariant.classList.add("disabled");
@@ -249,16 +245,27 @@
     stepVariant.classList.remove("disabled");
     variantSelect.disabled = false;
     variantSelect.innerHTML = `<option value="" selected disabled>캠페인을 선택하세요</option>`;
-    state.channel.variants.forEach((v) => {
-      const opt = document.createElement("option");
-      opt.value = v.id;
-      opt.textContent = v.name;
-      variantSelect.appendChild(opt);
-    });
-    const customOpt = document.createElement("option");
-    customOpt.value = CUSTOM_VARIANT_ID;
-    customOpt.textContent = "+ 새 프로젝트 (캠페인 값 직접 입력)";
-    variantSelect.appendChild(customOpt);
+
+    if (state.channel.campaigns) {
+      // 캠페인(목적) + 그룹(신규/리마케팅 등) 2단계 — 목록이 길어지는 채널에서 사용
+      state.channel.campaigns.forEach((c) => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        variantSelect.appendChild(opt);
+      });
+    } else {
+      state.channel.variants.forEach((v) => {
+        const opt = document.createElement("option");
+        opt.value = v.id;
+        opt.textContent = v.name;
+        variantSelect.appendChild(opt);
+      });
+      const customOpt = document.createElement("option");
+      customOpt.value = CUSTOM_VARIANT_ID;
+      customOpt.textContent = "+ 새 캠페인 (직접 입력)";
+      variantSelect.appendChild(customOpt);
+    }
 
     stepMeta.style.display = state.channel.isMeta ? "" : "none";
     if (state.channel.isMeta) {
@@ -276,6 +283,16 @@
 
   function onVariantChange() {
     const val = variantSelect.value;
+
+    if (state.channel.campaigns) {
+      customVariantBox.classList.add("hidden");
+      state.selectedCampaign = state.channel.campaigns.find((c) => c.id === val) || null;
+      state.variant = null;
+      populateGroupStep();
+      clearResult();
+      return;
+    }
+
     customVariantBox.classList.toggle("hidden", val !== CUSTOM_VARIANT_ID);
 
     if (val === CUSTOM_VARIANT_ID) {
@@ -291,7 +308,7 @@
       const baseVariant = state.channel.variants.find((v) => v.id === customBaseSelect.value) || state.channel.variants[0];
       state.variant = {
         id: CUSTOM_VARIANT_ID,
-        name: "새 프로젝트",
+        name: "새 캠페인",
         source: baseVariant.source,
         medium: baseVariant.medium,
         campaign: null
@@ -301,6 +318,33 @@
       state.variant = state.channel.variants.find((v) => v.id === val) || null;
     }
 
+    updateSourceDefault();
+    setupPageStep();
+    clearResult();
+  }
+
+  // 7번(그룹) 단계를 선택된 캠페인의 그룹 목록으로 채운다.
+  function populateGroupStep() {
+    resetStep(stepGroup, groupSelect, "먼저 캠페인을 선택하세요");
+    if (!state.selectedCampaign) {
+      stepGroup.style.display = "none";
+      return;
+    }
+    stepGroup.style.display = "";
+    stepGroup.classList.remove("disabled");
+    groupSelect.disabled = false;
+    groupSelect.innerHTML = `<option value="" selected disabled>그룹을 선택하세요</option>`;
+    state.selectedCampaign.groups.forEach((g) => {
+      const opt = document.createElement("option");
+      opt.value = g.id;
+      opt.textContent = g.name;
+      groupSelect.appendChild(opt);
+    });
+  }
+
+  function onGroupChange() {
+    if (!state.selectedCampaign) return;
+    state.variant = state.selectedCampaign.groups.find((g) => g.id === groupSelect.value) || null;
     updateSourceDefault();
     setupPageStep();
     clearResult();
@@ -318,7 +362,7 @@
     refreshResult();
   }
 
-  // "+ 새 프로젝트" 입력 중 완성될 utm_campaign 전체 값을 실시간으로 보여준다.
+  // "+ 새 캠페인" 입력 중 완성될 utm_campaign 전체 값을 실시간으로 보여준다.
   function updateCustomCampaignHint() {
     if (!state.variant || state.variant.id !== CUSTOM_VARIANT_ID || !state.channel) return;
     const preview = getCampaignValue();
@@ -343,12 +387,9 @@
   }
 
   function setupPageStep() {
-    if (!state.variant || (variantSelect.value === CUSTOM_VARIANT_ID && !customCampaignInput.value.trim())) {
-      stepContent.classList.add("disabled");
+    if (!state.variant || (state.variant.id === CUSTOM_VARIANT_ID && !customCampaignInput.value.trim())) {
       return;
     }
-
-    const channel = state.channel;
 
     // 캠페인(프로젝트)에 따라 페이지가 고정되는 경우 (예: 네이버 파워컨텐츠, 오프라인 QR) — 2번에서 고른 값을 덮어쓴다.
     const fixedPageId = state.variant.page;
@@ -362,14 +403,6 @@
       fixedPageNote.textContent = `이 캠페인은 랜딩 페이지가 "${page.name}"로 고정되어 있어, 2번에서 고르신 값 대신 이 페이지를 사용합니다.`;
     } else {
       resetPageOverride();
-    }
-
-    stepContent.classList.remove("disabled");
-
-    // utm_content 채널이 날짜 기반으로 고정값을 갖는 경우 (네이버 파워컨텐츠) 프리필
-    if (channel.hasContentDate && state.variant.content) {
-      contentInput.value = state.variant.content;
-      state.content = state.variant.content;
     }
   }
 
@@ -406,12 +439,14 @@
     return `${source}_${medium}_${promotion}_${code}`;
   }
 
+  // utm_content는 별도 입력창 없이, 필요한 채널(메타 자동배치의 게재위치 매크로, 네이버 파워컨텐츠의 소재 날짜)에서만 자동으로 채워진다.
   function getContentValue() {
     if (state.channel && state.channel.isMeta && state.metaPlacement) {
       if (state.metaPlacement.id === "custom") return metaCustomInput.value.trim();
       if (state.metaPlacement.content) return state.metaPlacement.content;
     }
-    return contentInput.value.trim();
+    if (state.variant && state.variant.content) return state.variant.content;
+    return "";
   }
 
   function getPathAndParams() {
@@ -552,6 +587,10 @@
   });
   channelSelect.addEventListener("change", onChannelChange);
   variantSelect.addEventListener("change", onVariantChange);
+  groupSelect.addEventListener("change", () => {
+    onGroupChange();
+    refreshResult();
+  });
   customBaseSelect.addEventListener("change", onCustomBaseChange);
   customCampaignInput.addEventListener("input", () => {
     setupPageStep();
@@ -568,20 +607,14 @@
     refreshResult();
   });
   customPathInput.addEventListener("input", refreshResult);
-  contentInput.addEventListener("input", refreshResult);
-  todayBtn.addEventListener("click", () => {
-    const d = new Date();
-    const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-    contentInput.value = ymd;
-    refreshResult();
-  });
 
   copyBtn.addEventListener("click", () => copyText(resultUrl.value));
   addHistoryBtn.addEventListener("click", () => {
     const url = resultUrl.value;
     if (!url) return;
-    const label = `${state.site.name} · ${state.channel.name} · ${
-      state.variant.id === CUSTOM_VARIANT_ID ? "새 프로젝트" : state.variant.name
+    const campaignLabel = state.selectedCampaign ? `${state.selectedCampaign.name} · ` : "";
+    const label = `${state.site.name} · ${state.channel.name} · ${campaignLabel}${
+      state.variant.id === CUSTOM_VARIANT_ID ? "새 캠페인" : state.variant.name
     }`;
     const items = loadHistory();
     items.push({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, url, label, ts: Date.now() });

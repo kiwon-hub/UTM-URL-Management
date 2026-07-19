@@ -99,6 +99,15 @@
         </div>
       </li>
 
+      <li class="step disabled" id="step-group" style="display:none;">
+        <div class="step-head"><span class="step-no">7</span><h2>그룹 선택</h2></div>
+        <div class="step-body">
+          <select id="groupSelect" disabled>
+            <option value="" selected disabled>먼저 캠페인을 선택하세요</option>
+          </select>
+        </div>
+      </li>
+
       <li class="step disabled" id="step-meta" style="display:none;">
         <div class="step-head"><span class="step-no">•</span><h2>자동 배치 세부 구분 (FB / IG 등)</h2></div>
         <div class="step-body">
@@ -110,14 +119,6 @@
             <input type="text" id="metaCustomInput" placeholder="예: fb_reels" />
           </div>
           <p class="hint" id="metaNote"></p>
-        </div>
-      </li>
-
-      <li class="step disabled" id="step-content">
-        <div class="step-head"><span class="step-no">7</span><h2>utm_content (선택)</h2></div>
-        <div class="step-body">
-          <input type="text" id="contentInput" placeholder="예: 20260712 또는 소재명" />
-          <button type="button" id="todayBtn" class="btn-secondary">오늘 날짜 삽입</button>
         </div>
       </li>
     </ol>
@@ -150,7 +151,7 @@
         <dt>utm_source</dt><dd>트래픽이 <strong>어느 매체/플랫폼</strong>에서 왔는지 — 예: <code>google</code>, <code>naver</code>, <code>kakao</code>, <code>meta</code></dd>
         <dt>utm_medium</dt><dd><strong>어떤 방식</strong>의 유입인지 (마케팅 채널 유형) — 예: <code>cpc</code>(검색광고), <code>display</code>(배너광고), <code>paid_social</code>(소셜광고). <strong>채널이 정해지면 값이 고정되며, 관리 페이지에서 임의로 바꾸지 않습니다.</strong></dd>
         <dt>utm_campaign</dt><dd>source·medium·목적·채널코드를 전부 담아 캠페인 값 하나만 봐도 무엇인지 알 수 있게 만듭니다. 항상 <code>{소스}_{미디움}_{프로모션}_{채널코드}</code> 형식을 따릅니다. 예: <code>ads_naver_keyword_ads_freesample_nakey</code></dd>
-        <dt>utm_content</dt><dd>소재 구분 (날짜, 소재명, 게재위치 등). 선택 입력입니다.</dd>
+        <dt>utm_content</dt><dd>소재 구분 (날짜, 게재위치 등). 별도 입력창은 없고, 필요한 채널(네이버 파워컨텐츠의 소재 날짜, 메타 자동 배치의 게재위치 매크로)에서만 자동으로 채워집니다.</dd>
       </dl>
 
       <h2>캠페인 이름 공식</h2>

@@ -5,10 +5,15 @@
  * - channel: 플랫폼 안의 광고 종류 단위. utm_medium은 채널에 고정된다 (요구사항 2: 기존과 동일하게 유지).
  *   channel.code는 utm_campaign 끝에 항상 붙는 플랫폼+매체 코드(예: 네이버 키워드=nakey).
  *   기존 대장에서 "nakey" 같은 접미사가 이미 이런 용도로 쓰이고 있어, 모든 채널에 필수로 확장했다.
- * - variant: 채널 안에서 목적/프로젝트 단위. variant.campaign은 "{프로모션}_{채널코드}" 형식으로 저장하고
+ * - channel은 둘 중 하나를 갖는다:
+ *   - variants: 목적/프로젝트가 곧바로 선택지인 단일 목록 (짧을 때 사용).
+ *   - campaigns: [{ id, name, groups: [...] }] 형태로 캠페인(목적)과 그룹(신규/리마케팅 등)을 두 단계로 나눈 목록
+ *     (조합이 많아 목록이 길어지는 채널에 사용 — 예: 카카오모먼트). 각 group의 모양은 variant와 동일하다.
+ *     새 캠페인/그룹을 추가하려면 이 배열에 객체 하나만 추가하면 된다.
+ *   최종 선택 항목(variant 또는 group)의 campaign 필드는 "{프로모션}_{채널코드}" 형식으로 저장하고
  *   (예: freesample_nakey, simtos_new_kamom), app.js가 실제 utm_campaign을 만들 때 여기에
  *   "{현재 소스}_{현재 미디움}_"을 앞에 붙여 "{소스}_{미디움}_{프로모션}_{채널코드}"를 완성한다.
- *   variant.source가 없으면 channel의 defaultSource를 사용한다 (4번 utm_source 단계에서 수동으로 바꿀 수도 있다).
+ *   최종 선택 항목에 source가 없으면 channel의 defaultSource를 사용한다 (4번 utm_source 단계에서 수동으로 바꿀 수도 있다).
  * - pages: 사이트별 랜딩 페이지 프리셋 (기존 대장에 실제 쓰인 경로들).
  */
 const UTM_DATA = {
@@ -135,14 +140,10 @@ const UTM_DATA = {
           defaultSource: "ads",
           code: "nadis",
           variants: [
-            { id: "new_audience", name: "기본 - 신규 - 오디언스", campaign: "basic_new_aud_nadis" },
-            { id: "new_advoost", name: "기본 - 신규 - 애드부스트오디언스", campaign: "basic_new_adv_nadis" },
-            { id: "remarket_audience", name: "기본 - 리마케팅 - 오디언스", campaign: "basic_remarketing_aud_nadis" },
-            { id: "remarket_advoost", name: "기본 - 리마케팅 - 애드부스트오디언스", campaign: "basic_remarketing_adv_nadis" },
-            { id: "freesample_new_audience", name: "무료샘플신청 - 신규 - 오디언스", campaign: "freesample_new_aud_nadis" },
-            { id: "freesample_new_advoost", name: "무료샘플신청 - 신규 - 애드부스트오디언스", campaign: "freesample_new_adv_nadis" },
-            { id: "freesample_remarket_audience", name: "무료샘플신청 - 리마케팅 - 오디언스", campaign: "freesample_remarketing_aud_nadis" },
-            { id: "freesample_remarket_advoost", name: "무료샘플신청 - 리마케팅 - 애드부스트오디언스", campaign: "freesample_remarketing_adv_nadis" },
+            { id: "new", name: "기본 - 신규 (애드부스트오디언스)", campaign: "basic_new_nadis" },
+            { id: "remarketing", name: "기본 - 리마케팅 (오디언스)", campaign: "basic_remarketing_nadis" },
+            { id: "freesample_new", name: "무료샘플신청 - 신규 (애드부스트오디언스)", campaign: "freesample_new_nadis" },
+            { id: "freesample_remarketing", name: "무료샘플신청 - 리마케팅 (오디언스)", campaign: "freesample_remarketing_nadis" },
             { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_nadis" }
           ]
         },
@@ -153,15 +154,34 @@ const UTM_DATA = {
           medium: "kakao_moment_ads",
           defaultSource: "ads",
           code: "kamom",
-          variants: [
-            { id: "new", name: "기본 - 신규", campaign: "basic_new_kamom" },
-            { id: "remarketing", name: "기본 - 리마케팅", campaign: "basic_remarketing_kamom" },
-            { id: "freesample_new", name: "무료샘플신청 - 신규", campaign: "freesample_new_kamom" },
-            { id: "freesample_remarketing", name: "무료샘플신청 - 리마케팅", campaign: "freesample_remarketing_kamom" },
-            { id: "simtos_new", name: "심토스 - 신규", source: "simtos", campaign: "simtos_new_kamom" },
-            { id: "simtos_remarketing", name: "심토스 - 리마케팅", source: "simtos", campaign: "simtos_remarketing_kamom" },
-            { id: "display_freesample", name: "디스플레이 배너 - 무료샘플신청", campaign: "freesample_display_kamom" },
-            { id: "bizboard_freesample", name: "비즈보드 - 무료샘플신청", campaign: "freesample_bizboard_kamom" }
+          // 목록이 길어지지 않도록 캠페인(목적)과 그룹(신규/리마케팅/배치 등) 두 단계로 나눈다.
+          campaigns: [
+            {
+              id: "basic",
+              name: "기본",
+              groups: [
+                { id: "new", name: "신규", campaign: "basic_new_kamom" },
+                { id: "remarketing", name: "리마케팅", campaign: "basic_remarketing_kamom" }
+              ]
+            },
+            {
+              id: "freesample",
+              name: "무료샘플신청",
+              groups: [
+                { id: "new", name: "신규", campaign: "freesample_new_kamom" },
+                { id: "remarketing", name: "리마케팅", campaign: "freesample_remarketing_kamom" },
+                { id: "display", name: "디스플레이 배너", campaign: "freesample_display_kamom" },
+                { id: "bizboard", name: "비즈보드", campaign: "freesample_bizboard_kamom" }
+              ]
+            },
+            {
+              id: "simtos",
+              name: "심토스 전시회",
+              groups: [
+                { id: "new", name: "신규", source: "simtos", campaign: "simtos_new_kamom" },
+                { id: "remarketing", name: "리마케팅", source: "simtos", campaign: "simtos_remarketing_kamom" }
+              ]
+            }
           ]
         },
         {
