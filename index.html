@@ -85,18 +85,15 @@
       <li class="step disabled" id="step-variant">
         <div class="step-head"><span class="step-no">6</span><h2>캠페인 선택 (utm_campaign)</h2></div>
         <div class="step-body">
-          <p class="hint">여기서 고른 프로젝트가 <code>utm_campaign</code> 값이 됩니다 — "무슨 목적의 광고인지"를 나타내요. 캠페인 값은 항상 <code>{목적}_{세부구분}_{채널코드}</code> 형식입니다. 예: <code>freesample_nakey</code> (무료샘플신청 프로모션 · 네이버 키워드)</p>
+          <p class="hint">캠페인 값은 <code>{소스}_{미디움}_{프로모션}_{채널코드}</code> 형식으로, source/medium부터 채널코드까지 전부 담아 캠페인 값 하나만 봐도 무엇인지 알 수 있게 만듭니다. 예: <code>ads_naver_keyword_ads_freesample_nakey</code></p>
           <select id="variantSelect" disabled>
             <option value="" selected disabled>먼저 채널을 선택하세요</option>
           </select>
           <div id="customVariantBox" class="hidden">
             <label for="customBaseSelect">기준으로 삼을 기존 설정 (source 유지)</label>
             <select id="customBaseSelect"></select>
-            <label for="customCampaignInput" style="margin-top:10px;">새 캠페인 이름 (목적_세부구분)</label>
-            <div class="campaign-compose">
-              <input type="text" id="customCampaignInput" placeholder="예: winter_promo" />
-              <span id="customCampaignSuffix" class="campaign-suffix"></span>
-            </div>
+            <label for="customCampaignInput" style="margin-top:10px;">새 프로모션 이름</label>
+            <input type="text" id="customCampaignInput" placeholder="예: winter_promo" />
             <p class="hint" id="customCampaignHint"></p>
           </div>
         </div>
@@ -152,19 +149,19 @@
       <dl>
         <dt>utm_source</dt><dd>트래픽이 <strong>어느 매체/플랫폼</strong>에서 왔는지 — 예: <code>google</code>, <code>naver</code>, <code>kakao</code>, <code>meta</code></dd>
         <dt>utm_medium</dt><dd><strong>어떤 방식</strong>의 유입인지 (마케팅 채널 유형) — 예: <code>cpc</code>(검색광고), <code>display</code>(배너광고), <code>paid_social</code>(소셜광고). <strong>채널이 정해지면 값이 고정되며, 관리 페이지에서 임의로 바꾸지 않습니다.</strong></dd>
-        <dt>utm_campaign</dt><dd><strong>무슨 목적</strong>의 광고였는지 (자유롭게 짓는 프로젝트명) — 같은 채널이라도 "기본 / 무료샘플신청 / 심토스 전시회"처럼 프로젝트가 바뀌면 campaign 값만 바뀝니다. 항상 <code>{목적}_{세부구분}_{채널코드}</code> 형식을 따릅니다. 예: <code>freesample_nakey</code></dd>
+        <dt>utm_campaign</dt><dd>source·medium·목적·채널코드를 전부 담아 캠페인 값 하나만 봐도 무엇인지 알 수 있게 만듭니다. 항상 <code>{소스}_{미디움}_{프로모션}_{채널코드}</code> 형식을 따릅니다. 예: <code>ads_naver_keyword_ads_freesample_nakey</code></dd>
         <dt>utm_content</dt><dd>소재 구분 (날짜, 소재명, 게재위치 등). 선택 입력입니다.</dd>
       </dl>
 
       <h2>캠페인 이름 공식</h2>
-      <p><code>utm_campaign = {목적}_{세부구분}_{채널코드}</code></p>
-      <p>맨 뒤 채널코드는 플랫폼+매체에 따라 <strong>항상 고정</strong>으로 붙는 접미사입니다. 기존 대장의 <code>nakey</code>(네이버 키워드) 표기가 애널리틱스에서 검색어로 필터링하기 위한 것으로 보여, 모든 채널에 같은 방식을 확장 적용했습니다. "+ 새 프로젝트"로 캠페인을 새로 만들 때도 이 코드가 자동으로 붙어서 빠뜨릴 일이 없습니다.</p>
+      <p><code>utm_campaign = {소스}_{미디움}_{프로모션}_{채널코드}</code></p>
+      <p>앞의 소스·미디움은 4·5번에서 고른 값을 그대로 가져오고, 프로모션은 "무슨 목적의 광고인지"(기본/무료샘플신청/심토스 전시회 등), 맨 뒤 채널코드는 플랫폼+매체에 따라 <strong>항상 고정</strong>으로 붙는 접미사입니다. 기존 대장의 <code>nakey</code>(네이버 키워드) 표기가 애널리틱스에서 검색어로 필터링하기 위한 것으로 보여, 모든 채널에 같은 방식을 확장 적용했습니다. "+ 새 프로젝트"로 캠페인을 새로 만들 때도 소스·미디움·채널코드가 자동으로 붙어서 빠뜨릴 일이 없습니다.</p>
       <table class="guide-table">
         <thead><tr><th>채널</th><th>코드</th></tr></thead>
         <tbody>
           <tr><td>네이버 검색광고 (키워드/파워링크)</td><td><code>nakey</code></td></tr>
           <tr><td>네이버 검색광고 (파워컨텐츠)</td><td><code>napc</code></td></tr>
-          <tr><td>네이버 디스플레이 (GFA)</td><td><code>nagfa</code></td></tr>
+          <tr><td>네이버 디스플레이</td><td><code>nadis</code></td></tr>
           <tr><td>카카오모먼트</td><td><code>kamom</code></td></tr>
           <tr><td>카카오 키워드광고</td><td><code>kakey</code></td></tr>
           <tr><td>구글 검색광고</td><td><code>gakey</code></td></tr>
@@ -174,7 +171,7 @@
           <tr><td>오프라인 QR코드</td><td><code>ofqr</code></td></tr>
         </tbody>
       </table>
-      <p class="hint">목적(freesample/basic/simtos 등)과 세부구분(new/remarketing/audience 등)은 필요한 만큼만 붙이고, 채널코드만 빠뜨리지 않으면 됩니다.</p>
+      <p class="hint">프로모션(freesample/basic/simtos 등)은 필요한 만큼만 짓고, 소스·미디움·채널코드는 자동으로 채워집니다.</p>
 
       <h2>"광고니까 utm_source=ads"가 맞을까?</h2>
       <p>흔히 하는 오해입니다. <strong>"광고냐 아니냐"는 utm_medium이 답하는 질문</strong>이고(cpc/display/paid_social 자체가 이미 "유료광고"라는 뜻), <strong>utm_source는 "어느 플랫폼이냐"를 답해야 하는 항목</strong>입니다.</p>

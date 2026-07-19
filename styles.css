@@ -102,21 +102,6 @@ select:disabled, input:disabled { background: #f2f3f5; color: #9aa0aa; }
 #customVariantBox, #customPageBox, #metaCustomBox, #customSourceBox { margin-top: 12px; }
 #customVariantBox label, #customPageBox label, #metaCustomBox label, #customSourceBox label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
 
-.campaign-compose { display: flex; align-items: center; gap: 0; }
-.campaign-compose input { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.campaign-suffix {
-  white-space: nowrap;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-left: none;
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
-  background: var(--locked-bg);
-  color: var(--muted);
-  font-family: monospace;
-  font-size: 14px;
-}
-
 #todayBtn { margin-top: 8px; }
 
 .platform-group { display: flex; gap: 8px; flex-wrap: wrap; }

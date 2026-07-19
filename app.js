@@ -24,7 +24,6 @@
   const customVariantBox = el("customVariantBox");
   const customBaseSelect = el("customBaseSelect");
   const customCampaignInput = el("customCampaignInput");
-  const customCampaignSuffix = el("customCampaignSuffix");
   const customCampaignHint = el("customCampaignHint");
   const sourceSelect = el("sourceSelect");
   const customSourceBox = el("customSourceBox");
@@ -297,8 +296,7 @@
         medium: baseVariant.medium,
         campaign: null
       };
-      customCampaignSuffix.textContent = `_${state.channel.code}`;
-      customCampaignHint.textContent = `"${state.channel.code}"는 이 채널의 고정 코드라 자동으로 붙습니다. 예: winter_promo → winter_promo_${state.channel.code}. 참고로 같은 채널의 기존 캠페인은 ${baseVariant.campaign} 입니다.`;
+      updateCustomCampaignHint();
     } else {
       state.variant = state.channel.variants.find((v) => v.id === val) || null;
     }
@@ -314,10 +312,19 @@
     if (!baseVariant) return;
     state.variant.source = baseVariant.source;
     state.variant.medium = baseVariant.medium;
-    customCampaignHint.textContent = `"${state.channel.code}"는 이 채널의 고정 코드라 자동으로 붙습니다. 참고로 같은 채널의 기존 캠페인은 ${baseVariant.campaign} 입니다.`;
     updateSourceDefault();
     setupPageStep();
+    updateCustomCampaignHint();
     refreshResult();
+  }
+
+  // "+ 새 프로젝트" 입력 중 완성될 utm_campaign 전체 값을 실시간으로 보여준다.
+  function updateCustomCampaignHint() {
+    if (!state.variant || state.variant.id !== CUSTOM_VARIANT_ID || !state.channel) return;
+    const preview = getCampaignValue();
+    customCampaignHint.textContent = preview
+      ? `생성될 utm_campaign: ${preview}`
+      : "프로모션 이름을 입력하면 utm_campaign이 자동으로 완성됩니다 (예: winter_promo).";
   }
 
   // utm_medium은 채널 선택 시점(onChannelChange)에 이미 고정되므로 여기서는 utm_source 기본값만 갱신한다.
@@ -378,14 +385,25 @@
     clearResult();
   }
 
+  // utm_campaign은 항상 {소스}_{미디움}_{프로모션}_{채널코드} 형식으로 조립한다.
+  // 프로모션 부분은 기존 캠페인 값(예: freesample_nakey)에서 채널코드 접미사를 뗀 나머지다.
+  function getPromotionPart() {
+    if (state.variant.id === CUSTOM_VARIANT_ID) return customCampaignInput.value.trim();
+    const code = state.channel.code;
+    const full = state.variant.campaign || "";
+    const suffix = `_${code}`;
+    return full.endsWith(suffix) ? full.slice(0, -suffix.length) : full;
+  }
+
   function getCampaignValue() {
-    if (!state.variant) return "";
-    if (state.variant.id === CUSTOM_VARIANT_ID) {
-      const base = customCampaignInput.value.trim();
-      if (!base) return "";
-      return `${base}_${state.channel.code}`;
-    }
-    return state.variant.campaign;
+    if (!state.variant || !state.channel) return "";
+    const promotion = getPromotionPart();
+    if (!promotion) return "";
+    const source = getSourceValue();
+    const medium = state.variant.medium || state.channel.medium || "";
+    const code = state.channel.code;
+    if (!source || !medium || !code) return "";
+    return `${source}_${medium}_${promotion}_${code}`;
   }
 
   function getContentValue() {
@@ -525,14 +543,19 @@
   siteSelect.addEventListener("change", onSiteChange);
   sourceSelect.addEventListener("change", () => {
     customSourceBox.classList.toggle("hidden", sourceSelect.value !== CUSTOM_SOURCE_ID);
+    updateCustomCampaignHint();
     refreshResult();
   });
-  customSourceInput.addEventListener("input", refreshResult);
+  customSourceInput.addEventListener("input", () => {
+    updateCustomCampaignHint();
+    refreshResult();
+  });
   channelSelect.addEventListener("change", onChannelChange);
   variantSelect.addEventListener("change", onVariantChange);
   customBaseSelect.addEventListener("change", onCustomBaseChange);
   customCampaignInput.addEventListener("input", () => {
     setupPageStep();
+    updateCustomCampaignHint();
     refreshResult();
   });
   metaPlacementSelect.addEventListener("change", () => {

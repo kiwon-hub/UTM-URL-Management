@@ -5,9 +5,10 @@
  * - channel: 플랫폼 안의 광고 종류 단위. utm_medium은 채널에 고정된다 (요구사항 2: 기존과 동일하게 유지).
  *   channel.code는 utm_campaign 끝에 항상 붙는 플랫폼+매체 코드(예: 네이버 키워드=nakey).
  *   기존 대장에서 "nakey" 같은 접미사가 이미 이런 용도로 쓰이고 있어, 모든 채널에 필수로 확장했다.
- * - variant: 채널 안에서 목적/프로젝트 단위. utm_campaign은 variant에 따라 달라진다.
- *   campaign 값은 "{목적}_{세부구분}_{채널코드}" 형식을 따른다 (예: freesample_nakey, simtos_new_kamom).
- *   variant.source가 없으면 channel의 defaultSource를 사용한다.
+ * - variant: 채널 안에서 목적/프로젝트 단위. variant.campaign은 "{프로모션}_{채널코드}" 형식으로 저장하고
+ *   (예: freesample_nakey, simtos_new_kamom), app.js가 실제 utm_campaign을 만들 때 여기에
+ *   "{현재 소스}_{현재 미디움}_"을 앞에 붙여 "{소스}_{미디움}_{프로모션}_{채널코드}"를 완성한다.
+ *   variant.source가 없으면 channel의 defaultSource를 사용한다 (4번 utm_source 단계에서 수동으로 바꿀 수도 있다).
  * - pages: 사이트별 랜딩 페이지 프리셋 (기존 대장에 실제 쓰인 경로들).
  */
 const UTM_DATA = {
@@ -128,21 +129,21 @@ const UTM_DATA = {
         },
         {
           id: "naver_display",
-          name: "네이버 디스플레이 (GFA)",
+          name: "네이버 디스플레이",
           platform: "naver",
           medium: "naver_display",
           defaultSource: "ads",
-          code: "nagfa",
+          code: "nadis",
           variants: [
-            { id: "new_audience", name: "기본 - 신규 - 오디언스", campaign: "basic_new_aud_nagfa" },
-            { id: "new_advoost", name: "기본 - 신규 - 애드부스트오디언스", campaign: "basic_new_adv_nagfa" },
-            { id: "remarket_audience", name: "기본 - 리마케팅 - 오디언스", campaign: "basic_remarketing_aud_nagfa" },
-            { id: "remarket_advoost", name: "기본 - 리마케팅 - 애드부스트오디언스", campaign: "basic_remarketing_adv_nagfa" },
-            { id: "freesample_new_audience", name: "무료샘플신청 - 신규 - 오디언스", campaign: "freesample_new_aud_nagfa" },
-            { id: "freesample_new_advoost", name: "무료샘플신청 - 신규 - 애드부스트오디언스", campaign: "freesample_new_adv_nagfa" },
-            { id: "freesample_remarket_audience", name: "무료샘플신청 - 리마케팅 - 오디언스", campaign: "freesample_remarketing_aud_nagfa" },
-            { id: "freesample_remarket_advoost", name: "무료샘플신청 - 리마케팅 - 애드부스트오디언스", campaign: "freesample_remarketing_adv_nagfa" },
-            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_nagfa" }
+            { id: "new_audience", name: "기본 - 신규 - 오디언스", campaign: "basic_new_aud_nadis" },
+            { id: "new_advoost", name: "기본 - 신규 - 애드부스트오디언스", campaign: "basic_new_adv_nadis" },
+            { id: "remarket_audience", name: "기본 - 리마케팅 - 오디언스", campaign: "basic_remarketing_aud_nadis" },
+            { id: "remarket_advoost", name: "기본 - 리마케팅 - 애드부스트오디언스", campaign: "basic_remarketing_adv_nadis" },
+            { id: "freesample_new_audience", name: "무료샘플신청 - 신규 - 오디언스", campaign: "freesample_new_aud_nadis" },
+            { id: "freesample_new_advoost", name: "무료샘플신청 - 신규 - 애드부스트오디언스", campaign: "freesample_new_adv_nadis" },
+            { id: "freesample_remarket_audience", name: "무료샘플신청 - 리마케팅 - 오디언스", campaign: "freesample_remarketing_aud_nadis" },
+            { id: "freesample_remarket_advoost", name: "무료샘플신청 - 리마케팅 - 애드부스트오디언스", campaign: "freesample_remarketing_adv_nadis" },
+            { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_nadis" }
           ]
         },
         {
