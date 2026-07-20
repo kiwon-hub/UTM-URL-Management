@@ -9,7 +9,8 @@
     variant: null, // 최종 선택 항목 (variant 또는 group과 동일한 모양)
     metaPlacement: null,
     page: null,
-    userPageId: null
+    userPageId: null,
+    currentUrl: ""
   };
 
   const el = (id) => document.getElementById(id);
@@ -491,16 +492,40 @@
   }
 
   function clearResult() {
-    resultUrl.value = "";
+    state.currentUrl = "";
+    resultUrl.textContent = "위 단계를 모두 선택하면 URL이 여기에 표시됩니다.";
+    resultUrl.classList.add("empty");
     copyBtn.disabled = true;
     addHistoryBtn.disabled = true;
     resultMsg.textContent = "";
   }
 
+  // 파라미터 값(=  뒤쪽)만 굵게 표시해 한눈에 잘 보이도록 한다. 키/구분자는 흐리게 둔다.
+  function renderResultUrl(url) {
+    const [base, query] = url.split("?");
+    let html = escapeHtml(base);
+    if (query) {
+      html += "?";
+      html += query
+        .split("&")
+        .map((part) => {
+          const eq = part.indexOf("=");
+          if (eq === -1) return escapeHtml(part);
+          const key = part.slice(0, eq);
+          const value = part.slice(eq + 1);
+          return `${escapeHtml(key)}=<strong>${escapeHtml(value)}</strong>`;
+        })
+        .join("&");
+    }
+    resultUrl.innerHTML = html;
+  }
+
   function refreshResult() {
     const url = buildUrl();
     if (url) {
-      resultUrl.value = url;
+      state.currentUrl = url;
+      resultUrl.classList.remove("empty");
+      renderResultUrl(url);
       copyBtn.disabled = false;
       addHistoryBtn.disabled = false;
     } else {
@@ -556,13 +581,24 @@
   }
 
   function copyText(text) {
+    if (!text) return;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => flashMsg("복사되었습니다."));
-    } else {
-      resultUrl.select();
+      return;
+    }
+    const temp = document.createElement("textarea");
+    temp.value = text;
+    temp.style.position = "fixed";
+    temp.style.opacity = "0";
+    document.body.appendChild(temp);
+    temp.select();
+    try {
       document.execCommand("copy");
       flashMsg("복사되었습니다.");
+    } catch (e) {
+      flashMsg("복사에 실패했습니다.");
     }
+    document.body.removeChild(temp);
   }
 
   function flashMsg(msg) {
@@ -602,9 +638,9 @@
   });
   customPathInput.addEventListener("input", refreshResult);
 
-  copyBtn.addEventListener("click", () => copyText(resultUrl.value));
+  copyBtn.addEventListener("click", () => copyText(state.currentUrl));
   addHistoryBtn.addEventListener("click", () => {
-    const url = resultUrl.value;
+    const url = state.currentUrl;
     if (!url) return;
     const campaignLabel = state.selectedCampaign ? `${state.selectedCampaign.name} · ` : "";
     const label = `${state.site.name} · ${state.channel.name} · ${campaignLabel}${
