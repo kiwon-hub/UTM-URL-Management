@@ -85,7 +85,7 @@
       <li class="step disabled" id="step-variant">
         <div class="step-head"><span class="step-no">6</span><h2>캠페인 선택 (utm_campaign)</h2></div>
         <div class="step-body">
-          <p class="hint">캠페인 값은 <code>{소스}_{미디움}_{프로모션}_{채널코드}</code> 형식으로, source/medium부터 채널코드까지 전부 담아 캠페인 값 하나만 봐도 무엇인지 알 수 있게 만듭니다. 예: <code>ads_naver_keyword_ads_freesample_nakey</code></p>
+          <p class="hint">캠페인 값은 <code>{프로모션}_{채널코드}</code> 형식입니다. source·medium은 utm_source/utm_medium에 이미 있어서 캠페인 값에는 다시 넣지 않습니다. 예: <code>freesample_nakey</code></p>
           <select id="variantSelect" disabled>
             <option value="" selected disabled>먼저 채널을 선택하세요</option>
           </select>
@@ -150,13 +150,13 @@
       <dl>
         <dt>utm_source</dt><dd>트래픽이 <strong>어느 매체/플랫폼</strong>에서 왔는지 — 예: <code>google</code>, <code>naver</code>, <code>kakao</code>, <code>meta</code></dd>
         <dt>utm_medium</dt><dd><strong>어떤 방식</strong>의 유입인지 (마케팅 채널 유형) — 예: <code>cpc</code>(검색광고), <code>display</code>(배너광고), <code>paid_social</code>(소셜광고). <strong>채널이 정해지면 값이 고정되며, 관리 페이지에서 임의로 바꾸지 않습니다.</strong></dd>
-        <dt>utm_campaign</dt><dd>source·medium·목적·채널코드를 전부 담아 캠페인 값 하나만 봐도 무엇인지 알 수 있게 만듭니다. 항상 <code>{소스}_{미디움}_{프로모션}_{채널코드}</code> 형식을 따릅니다. 예: <code>ads_naver_keyword_ads_freesample_nakey</code></dd>
+        <dt>utm_campaign</dt><dd><strong>무슨 목적</strong>의 광고였는지 (자유롭게 짓는 프로모션명) + 채널코드. source·medium은 이미 별도 파라미터로 있어서 캠페인 값에는 다시 넣지 않습니다. 항상 <code>{프로모션}_{채널코드}</code> 형식을 따릅니다. 예: <code>freesample_nakey</code></dd>
         <dt>utm_content</dt><dd>소재 구분 (날짜, 게재위치 등). 별도 입력창은 없고, 필요한 채널(네이버 파워컨텐츠의 소재 날짜, 메타 자동 배치의 게재위치 매크로)에서만 자동으로 채워집니다.</dd>
       </dl>
 
       <h2>캠페인 이름 공식</h2>
-      <p><code>utm_campaign = {소스}_{미디움}_{프로모션}_{채널코드}</code></p>
-      <p>앞의 소스·미디움은 4·5번에서 고른 값을 그대로 가져오고, 프로모션은 "무슨 목적의 광고인지"(기본/무료샘플신청/심토스 전시회 등), 맨 뒤 채널코드는 플랫폼+매체에 따라 <strong>항상 고정</strong>으로 붙는 접미사입니다. 기존 대장의 <code>nakey</code>(네이버 키워드) 표기가 애널리틱스에서 검색어로 필터링하기 위한 것으로 보여, 모든 채널에 같은 방식을 확장 적용했습니다. "+ 새 프로젝트"로 캠페인을 새로 만들 때도 소스·미디움·채널코드가 자동으로 붙어서 빠뜨릴 일이 없습니다.</p>
+      <p><code>utm_campaign = {프로모션}_{채널코드}</code></p>
+      <p>프로모션은 "무슨 목적의 광고인지"(기본/무료샘플신청/심토스 전시회 등), 맨 뒤 채널코드는 플랫폼+매체에 따라 <strong>항상 고정</strong>으로 붙는 접미사입니다. source·medium은 utm_source/utm_medium 파라미터에 이미 있으니 캠페인 값에는 다시 담지 않습니다. 기존 대장의 <code>nakey</code>(네이버 키워드) 표기가 애널리틱스에서 검색어로 필터링하기 위한 것으로 보여, 모든 채널에 같은 방식을 확장 적용했습니다. "+ 새 캠페인"으로 새로 만들 때도 채널코드가 자동으로 붙어서 빠뜨릴 일이 없습니다.</p>
       <table class="guide-table">
         <thead><tr><th>채널</th><th>코드</th></tr></thead>
         <tbody>

@@ -418,8 +418,8 @@
     clearResult();
   }
 
-  // utm_campaign은 항상 {소스}_{미디움}_{프로모션}_{채널코드} 형식으로 조립한다.
-  // 프로모션 부분은 기존 캠페인 값(예: freesample_nakey)에서 채널코드 접미사를 뗀 나머지다.
+  // utm_campaign은 {프로모션}_{채널코드} 형식으로 조립한다. 채널코드가 이미 플랫폼+미디움을 나타내므로
+  // source/medium 문자열을 캠페인에 다시 넣지 않는다 (utm_source, utm_medium 파라미터에 이미 있음).
   function getPromotionPart() {
     if (state.variant.id === CUSTOM_VARIANT_ID) return customCampaignInput.value.trim();
     const code = state.channel.code;
@@ -432,11 +432,9 @@
     if (!state.variant || !state.channel) return "";
     const promotion = getPromotionPart();
     if (!promotion) return "";
-    const source = getSourceValue();
-    const medium = state.variant.medium || state.channel.medium || "";
     const code = state.channel.code;
-    if (!source || !medium || !code) return "";
-    return `${source}_${medium}_${promotion}_${code}`;
+    if (!code) return "";
+    return `${promotion}_${code}`;
   }
 
   // utm_content는 별도 입력창 없이, 필요한 채널(메타 자동배치의 게재위치 매크로, 네이버 파워컨텐츠의 소재 날짜)에서만 자동으로 채워진다.
@@ -578,13 +576,9 @@
   siteSelect.addEventListener("change", onSiteChange);
   sourceSelect.addEventListener("change", () => {
     customSourceBox.classList.toggle("hidden", sourceSelect.value !== CUSTOM_SOURCE_ID);
-    updateCustomCampaignHint();
     refreshResult();
   });
-  customSourceInput.addEventListener("input", () => {
-    updateCustomCampaignHint();
-    refreshResult();
-  });
+  customSourceInput.addEventListener("input", refreshResult);
   channelSelect.addEventListener("change", onChannelChange);
   variantSelect.addEventListener("change", onVariantChange);
   groupSelect.addEventListener("change", () => {
