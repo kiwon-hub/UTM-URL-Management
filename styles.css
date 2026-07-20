@@ -140,8 +140,21 @@ select:disabled, input:disabled { background: #f2f3f5; color: #9aa0aa; }
   padding: 16px 18px;
 }
 .result h2 { font-size: 15px; margin: 0 0 10px; }
-.result-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.result-row input { flex: 1; min-width: 240px; font-family: monospace; font-size: 13px; }
+.result-url {
+  width: 100%;
+  resize: vertical;
+  font-family: monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+.result-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .result-msg { font-size: 12.5px; color: var(--primary); min-height: 16px; margin: 8px 0 0; }
 
 .history { margin-top: 20px; }
