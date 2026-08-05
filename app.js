@@ -54,7 +54,7 @@
   const CUSTOM_VARIANT_ID = "__custom__";
   const CUSTOM_PAGE_ID = "__custom__";
   const CUSTOM_SOURCE_ID = "__custom__";
-  const SOURCE_PRESETS = ["ads", "simtos", "kiwontools"];
+  const SOURCE_PRESETS = ["ads", "simtos", "kiwontools", "youtube"];
   const HISTORY_KEY = "utm_history_v1";
 
   // 채널/캠페인이 계산한 기본값으로 소스 선택을 맞춰준다. 이후에도 사용자가 직접 다른 값으로 바꿀 수 있다.

@@ -100,6 +100,7 @@ const UTM_DATA = {
         { id: "kakao", name: "카카오" },
         { id: "google", name: "구글" },
         { id: "meta", name: "메타" },
+        { id: "youtube", name: "유튜브" },
         { id: "offline", name: "오프라인" }
       ],
       pages: [
@@ -255,6 +256,19 @@ const UTM_DATA = {
           variants: [
             { id: "main", name: "홈페이지 사은품 QR", campaign: "mainpage_ofqr", page: "root" },
             { id: "simtos_sample", name: "심토스 현장 샘플신청 QR", source: "simtos", campaign: "simtos_ofqr", page: "sampleform_simtos" }
+          ]
+        },
+        {
+          id: "youtube_organic",
+          name: "유튜브 오가닉 (광고 아님)",
+          platform: "youtube",
+          medium: "social",
+          defaultSource: "youtube",
+          code: "ytorg",
+          variants: [
+            { id: "pinned_comment", name: "고정 댓글", campaign: "pinned_comment_ytorg" },
+            { id: "video_description", name: "영상 설명란", campaign: "video_description_ytorg" },
+            { id: "community_post", name: "커뮤니티 게시글", campaign: "community_post_ytorg" }
           ]
         }
       ]
