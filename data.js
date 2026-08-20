@@ -259,16 +259,36 @@ const UTM_DATA = {
           ]
         },
         {
-          id: "youtube_organic",
-          name: "유튜브 오가닉 (광고 아님)",
+          id: "youtube_pinned_comment",
+          name: "유튜브 고정댓글",
           platform: "youtube",
-          medium: "social",
+          medium: "pinned_comment",
           defaultSource: "youtube",
-          code: "ytorg",
+          code: "ytpc",
           variants: [
-            { id: "pinned_comment", name: "고정 댓글", campaign: "pinned_comment_ytorg" },
-            { id: "video_description", name: "영상 설명란", campaign: "video_description_ytorg" },
-            { id: "community_post", name: "커뮤니티 게시글", campaign: "community_post_ytorg" }
+            { id: "general", name: "일반", campaign: "general_ytpc" }
+          ]
+        },
+        {
+          id: "youtube_video_description",
+          name: "유튜브 영상설명란",
+          platform: "youtube",
+          medium: "video_description",
+          defaultSource: "youtube",
+          code: "ytdesc",
+          variants: [
+            { id: "general", name: "일반", campaign: "general_ytdesc" }
+          ]
+        },
+        {
+          id: "youtube_community",
+          name: "유튜브 커뮤니티",
+          platform: "youtube",
+          medium: "community_post",
+          defaultSource: "youtube",
+          code: "ytcp",
+          variants: [
+            { id: "general", name: "일반", campaign: "general_ytcp" }
           ]
         }
       ]
