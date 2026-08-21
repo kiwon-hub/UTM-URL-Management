@@ -255,7 +255,8 @@ const UTM_DATA = {
           code: "ofqr",
           variants: [
             { id: "main", name: "홈페이지 사은품 QR", campaign: "mainpage_ofqr", page: "root" },
-            { id: "simtos_sample", name: "심토스 현장 샘플신청 QR", source: "simtos", campaign: "simtos_ofqr", page: "sampleform_simtos" }
+            { id: "simtos_sample", name: "심토스 현장 샘플신청 QR", source: "simtos", campaign: "simtos_ofqr", page: "sampleform_simtos" },
+            { id: "catalog", name: "카탈로그/브로슈어 QR", campaign: "catalog_ofqr", page: "root" }
           ]
         },
         {
