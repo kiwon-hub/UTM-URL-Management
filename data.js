@@ -111,7 +111,7 @@ const UTM_DATA = {
         { id: "intro", name: "제품소개 페이지", path: "/shopinfo/sub3/sub3-1.html" },
         { id: "greeting", name: "인사말 페이지", path: "/shopinfo/sub1/sub1-1.html" },
         { id: "location", name: "오시는길 페이지", path: "/shopinfo/sub1/sub1-3.html" },
-        { id: "dealer", name: "대리점계약문의 게시판", path: "/board/urgency/urgency2.html" },
+        { id: "dealer", name: "대리점 계약문의 신청페이지", path: "/board/urgency/urgency2.html" },
         { id: "dealer_info", name: "대리점안내 페이지", path: "/shopinfo/sub1-4.html" },
         { id: "notice716", name: "공지사항(#716)", path: "/shop2/front/php/b/board_read.php", params: { board_no: "8", no: "716" } },
         { id: "cat348", name: "엔드밀 페이지 카테고리", path: "/product/list.html", params: { cate_no: "348" } },
@@ -130,6 +130,7 @@ const UTM_DATA = {
             { id: "basic", name: "기본", campaign: "basic_nakey" },
             { id: "basic_remarketing", name: "기본 - 리마케팅", campaign: "basic_remarketing_nakey" },
             { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_nakey" },
+            { id: "dealer", name: "대리점 계약문의 프로모션", campaign: "dealer_nakey" },
             { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_nakey" }
           ]
         },
@@ -145,6 +146,8 @@ const UTM_DATA = {
             { id: "remarketing", name: "기본 - 리마케팅 (오디언스)", campaign: "basic_remarketing_nadis" },
             { id: "freesample_new", name: "무료샘플신청 - 신규 (애드부스트오디언스)", campaign: "freesample_new_nadis" },
             { id: "freesample_remarketing", name: "무료샘플신청 - 리마케팅 (오디언스)", campaign: "freesample_remarketing_nadis" },
+            { id: "dealer_new", name: "대리점 계약문의 - 신규 (애드부스트오디언스)", campaign: "dealer_new_nadis" },
+            { id: "dealer_remarketing", name: "대리점 계약문의 - 리마케팅 (오디언스)", campaign: "dealer_remarketing_nadis" },
             { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_nadis" }
           ]
         },
@@ -176,6 +179,15 @@ const UTM_DATA = {
               ]
             },
             {
+              id: "dealer",
+              name: "대리점 계약문의",
+              groups: [
+                { id: "new", name: "신규", campaign: "dealer_new_kamom" },
+                { id: "remarketing", name: "리마케팅", campaign: "dealer_remarketing_kamom" },
+                { id: "bizboard", name: "비즈보드", campaign: "dealer_bizboard_kamom" }
+              ]
+            },
+            {
               id: "simtos",
               name: "심토스 전시회",
               groups: [
@@ -194,6 +206,7 @@ const UTM_DATA = {
           code: "kakey",
           variants: [
             { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_kakey" },
+            { id: "dealer", name: "대리점 계약문의 프로모션", campaign: "dealer_kakey" },
             { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_kakey" }
           ]
         },
@@ -206,6 +219,7 @@ const UTM_DATA = {
           code: "gakey",
           variants: [
             { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_gakey" },
+            { id: "dealer", name: "대리점 계약문의 프로모션", campaign: "dealer_gakey" },
             { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_gakey" }
           ]
         },
@@ -218,6 +232,7 @@ const UTM_DATA = {
           code: "mefb",
           variants: [
             { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_mefb" },
+            { id: "dealer", name: "대리점 계약문의 프로모션", campaign: "dealer_mefb" },
             { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_mefb" }
           ]
         },
@@ -230,6 +245,7 @@ const UTM_DATA = {
           code: "meig",
           variants: [
             { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_meig" },
+            { id: "dealer", name: "대리점 계약문의 프로모션", campaign: "dealer_meig" },
             { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_meig" }
           ]
         },
@@ -243,6 +259,7 @@ const UTM_DATA = {
           isMeta: true,
           variants: [
             { id: "freesample", name: "무료샘플신청 프로모션", campaign: "freesample_meauto" },
+            { id: "dealer", name: "대리점 계약문의 프로모션", campaign: "dealer_meauto" },
             { id: "simtos", name: "심토스 전시회", source: "simtos", campaign: "simtos_meauto" }
           ]
         },
@@ -256,7 +273,8 @@ const UTM_DATA = {
           variants: [
             { id: "main", name: "홈페이지 사은품 QR", campaign: "mainpage_ofqr", page: "root" },
             { id: "simtos_sample", name: "심토스 현장 샘플신청 QR", source: "simtos", campaign: "simtos_ofqr", page: "sampleform_simtos" },
-            { id: "catalog", name: "카탈로그/브로슈어 QR", campaign: "catalog_ofqr", page: "root" }
+            { id: "catalog", name: "카탈로그/브로슈어 QR", campaign: "catalog_ofqr", page: "root" },
+            { id: "dealer", name: "대리점 모집 QR (카탈로그/명함)", campaign: "dealer_ofqr", page: "dealer" }
           ]
         },
         {

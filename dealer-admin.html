@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>대리점 계약문의 관리 - 기원툴스</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231f2430'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='sans-serif'%3EM%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <h1>대리점 계약문의 관리</h1>
+  <nav class="tabs">
+    <a class="tab-btn" href="index.html">UTM URL 생성</a>
+    <a class="tab-btn" href="dealerform.html">신청페이지</a>
+  </nav>
+</header>
+
+<main class="wide">
+  <section class="summary" id="summaryBox">
+    <div class="summary-card">
+      <span class="summary-label">접속 전환 <code>dealer_inquiry_view</code></span>
+      <strong id="statView">0</strong>
+      <span class="summary-sub">신청페이지 진입</span>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">제출 전환 <code>dealer_inquiry_submit</code></span>
+      <strong id="statSubmit">0</strong>
+      <span class="summary-sub">신청서 전송</span>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">제출 전환율</span>
+      <strong id="statRate">-</strong>
+      <span class="summary-sub">제출 ÷ 접속</span>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">미처리(신규)</span>
+      <strong id="statNew">0</strong>
+      <span class="summary-sub">연락 대기 중</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>캠페인별 성과</h2>
+      <span class="hint" id="perfNote"></span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="perfTable">
+        <thead>
+          <tr><th>유입 (source / medium / campaign)</th><th class="num">접속</th><th class="num">제출</th><th class="num">전환율</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>접수 목록</h2>
+      <div class="panel-actions">
+        <button type="button" class="btn-secondary" id="exportBtn">CSV 내보내기</button>
+        <button type="button" class="btn-secondary" id="reloadBtn">새로고침</button>
+        <button type="button" class="btn-danger" id="clearBtn">전체 삭제</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="field">
+        <label for="filterKeyword">검색</label>
+        <input type="search" id="filterKeyword" placeholder="회사명 · 담당자 · 연락처 · 내용" />
+      </div>
+      <div class="field">
+        <label for="filterStatus">상태</label>
+        <select id="filterStatus"><option value="">전체</option></select>
+      </div>
+      <div class="field">
+        <label for="filterCampaign">캠페인</label>
+        <select id="filterCampaign"><option value="">전체</option></select>
+      </div>
+      <div class="field">
+        <label for="filterFrom">시작일</label>
+        <input type="date" id="filterFrom" />
+      </div>
+      <div class="field">
+        <label for="filterTo">종료일</label>
+        <input type="date" id="filterTo" />
+      </div>
+    </div>
+
+    <p class="hint" id="listCount"></p>
+    <div class="table-wrap">
+      <table class="data-table" id="listTable">
+        <thead>
+          <tr>
+            <th>접수일시</th><th>회사명</th><th>담당자</th><th>연락처</th><th>지역</th>
+            <th>유입 (source / medium / campaign)</th><th>상태</th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="empty-msg hidden" id="emptyMsg">조건에 맞는 문의가 없습니다.</p>
+  </section>
+
+  <section class="panel">
+    <h2>전환 이벤트 설정 안내</h2>
+    <table class="guide-table">
+      <thead><tr><th>구분</th><th>이벤트 이름</th><th>발생 시점</th></tr></thead>
+      <tbody>
+        <tr><td>접속 전환</td><td><code>dealer_inquiry_view</code></td><td><code>dealerform.html</code> 진입 시 1회 (같은 세션 중복 제외)</td></tr>
+        <tr><td>제출 전환</td><td><code>dealer_inquiry_submit</code></td><td>신청서 저장 완료 시 1회</td></tr>
+      </tbody>
+    </table>
+    <p class="hint">두 이벤트는 GTM <code>dataLayer</code>, GA4 <code>gtag</code>, 메타 픽셀, 카카오 픽셀, 네이버 공통 스크립트로 동시에 발송됩니다.
+      각 광고 계정의 전환 ID/라벨은 <code>dealer-common.js</code> 상단 <code>CONFIG</code>에서 채우면 되고, 비워두면 그 채널로는 발송하지 않습니다.
+      GA4에서는 두 이벤트를 각각 <strong>주요 이벤트(전환)</strong>로 등록해야 캠페인별 성과에 잡힙니다.
+      이벤트에는 <code>utm_source / utm_medium / utm_campaign / utm_content / utm_term</code>이 파라미터로 함께 실려 나갑니다.</p>
+  </section>
+</main>
+
+<script src="dealer-common.js"></script>
+<script src="dealer-admin.js"></script>
+</body>
+</html>

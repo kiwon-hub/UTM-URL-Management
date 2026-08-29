@@ -1,0 +1,358 @@
+<!--@layout(/layout/basic/layout.html)-->
+
+<!--
+  대리점 계약문의 페이지 (카페24 게시판 - /board/urgency/urgency2.html)
+
+  ▶ 왜 구글폼 iframe을 걷어냈나
+    구글폼을 iframe으로 띄우면 도메인이 달라서(docs.google.com) 부모 페이지에서는
+    "제출했다"는 사실을 알 수 없습니다. 즉 iframe 방식으로는 접속 전환만 잡히고
+    제출 전환은 원천적으로 측정이 불가능합니다.
+    그래서 폼 자체는 이 페이지에 직접 그리고, 답변만 기존 구글폼으로 그대로 보냅니다.
+    → 응답은 지금 쓰시던 구글폼/스프레드시트에 똑같이 쌓이고,
+      접속·제출 전환은 각각 따로 발송됩니다.
+
+  ▶ 붙이기 전에 할 일 (딱 두 가지)
+    1) GFORM.entries 의 entry 번호 채우기
+       구글폼 편집화면 → 우측 상단 ⋮ → "미리 채워진 링크 만들기" → 각 항목에 아무 값이나 입력 →
+       "링크 만들기" → 나온 주소의 entry.1234567890=값 에서 번호를 옮겨 적으면 됩니다.
+       (또는 폼 미리보기 페이지에서 소스보기 → entry.숫자 검색)
+    2) 구글폼에 "유입경로(UTM)" 단답형 문항을 하나 추가하고 그 entry 번호를 entries.utm 에 넣기
+       → 어떤 광고로 들어와 신청했는지 시트에서 바로 볼 수 있습니다.
+    번호를 채우기 전에는 페이지 상단에 빨간 안내가 뜨고 전송이 막힙니다.
+-->
+
+<style>
+/* 대리점 계약문의 폼 - 카페24 스킨과 충돌하지 않도록 모두 .kw-dealer 하위로 한정 */
+.kw-dealer { max-width: 640px; margin: 40px auto 80px; padding: 0 16px; color: #1f2430;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; box-sizing: border-box; }
+.kw-dealer * { box-sizing: border-box; }
+.kw-dealer h2 { font-size: 22px; margin: 0 0 10px; }
+.kw-dealer .kw-lead { color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0 0 24px; }
+.kw-dealer fieldset { border: 1px solid #e0e3e8; border-radius: 10px; padding: 16px 20px 22px; margin: 0 0 14px; background: #fff; }
+.kw-dealer legend { font-size: 14px; font-weight: 600; padding: 0 6px; }
+.kw-dealer .kw-field { display: block; margin-top: 14px; }
+.kw-dealer .kw-field > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.kw-dealer input[type="text"], .kw-dealer input[type="tel"], .kw-dealer input[type="email"],
+.kw-dealer select, .kw-dealer textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid #e0e3e8; border-radius: 8px;
+  font-size: 14px; font-family: inherit; background: #fff; color: #1f2430; }
+.kw-dealer textarea { resize: vertical; }
+.kw-dealer input:focus, .kw-dealer select:focus, .kw-dealer textarea:focus {
+  outline: none; border-color: #2f6fed; box-shadow: 0 0 0 3px rgba(47,111,237,.12); }
+.kw-dealer .kw-row { display: flex; gap: 14px; }
+.kw-dealer .kw-row .kw-field { flex: 1; min-width: 0; }
+.kw-dealer .kw-req { color: #2f6fed; background: #eef3ff; border-radius: 999px; font-size: 11px; padding: 2px 7px; margin-left: 4px; }
+.kw-dealer .kw-check { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 400; cursor: pointer; }
+.kw-dealer .kw-check input { width: 16px; height: 16px; }
+.kw-dealer .kw-hint { font-size: 12px; color: #6b7280; line-height: 1.5; margin: 8px 0 0; }
+.kw-dealer .kw-submit { width: 100%; padding: 14px; border: 0; border-radius: 8px; background: #2f6fed;
+  color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 6px; }
+.kw-dealer .kw-submit:disabled { background: #b9c8ee; cursor: not-allowed; }
+.kw-dealer .kw-error { color: #c0392b; font-size: 13px; margin: 10px 0 0; display: none; }
+.kw-dealer .kw-error.show { display: block; }
+.kw-dealer .kw-setup { background: #fdeceb; border: 1px solid #e3b5b0; color: #c0392b;
+  border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 1.6; margin-bottom: 16px; display: none; }
+.kw-dealer .kw-done { display: none; text-align: center; padding: 60px 20px; border: 1px solid #e0e3e8; border-radius: 10px; background: #fff; }
+.kw-dealer .kw-done h3 { font-size: 20px; margin: 0 0 10px; }
+.kw-dealer .kw-done p { color: #6b7280; font-size: 14px; margin: 0; line-height: 1.6; }
+@media (max-width: 640px) { .kw-dealer .kw-row { display: block; } }
+</style>
+
+<div class="kw-dealer">
+  <div class="kw-setup" id="kwSetup"></div>
+
+  <h2>대리점 계약문의</h2>
+  <p class="kw-lead">아래 내용을 남겨주시면 담당자가 <strong>영업일 기준 1~2일 내</strong>에 연락드립니다.
+    지역·취급 품목에 따라 공급 조건이 달라지므로 가능한 한 자세히 적어주세요.</p>
+
+  <form id="kwDealerForm" novalidate>
+    <fieldset>
+      <legend>업체 정보</legend>
+      <div class="kw-field">
+        <label for="kwCompany">회사명 <span class="kw-req">필수</span></label>
+        <input type="text" id="kwCompany" placeholder="예: 기원공구상사" />
+      </div>
+      <div class="kw-row">
+        <div class="kw-field">
+          <label for="kwName">담당자명 <span class="kw-req">필수</span></label>
+          <input type="text" id="kwName" placeholder="예: 홍길동" />
+        </div>
+        <div class="kw-field">
+          <label for="kwPhone">연락처 <span class="kw-req">필수</span></label>
+          <input type="tel" id="kwPhone" inputmode="numeric" placeholder="010-0000-0000" />
+        </div>
+      </div>
+      <div class="kw-row">
+        <div class="kw-field">
+          <label for="kwEmail">이메일</label>
+          <input type="email" id="kwEmail" placeholder="example@company.com" />
+        </div>
+        <div class="kw-field">
+          <label for="kwRegion">희망 지역 <span class="kw-req">필수</span></label>
+          <select id="kwRegion">
+            <option value="" selected disabled>지역을 선택하세요</option>
+            <option>서울</option><option>경기</option><option>인천</option>
+            <option>강원</option><option>대전/세종</option><option>충남</option><option>충북</option>
+            <option>대구</option><option>경북</option><option>부산</option><option>울산</option><option>경남</option>
+            <option>광주</option><option>전남</option><option>전북</option><option>제주</option><option>해외</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>문의 내용</legend>
+      <div class="kw-row">
+        <div class="kw-field">
+          <label for="kwItems">취급(희망) 품목</label>
+          <input type="text" id="kwItems" placeholder="예: 엔드밀, PCD인서트, 툴링" />
+        </div>
+        <div class="kw-field">
+          <label for="kwVolume">예상 월 거래 규모</label>
+          <select id="kwVolume">
+            <option value="" selected disabled>선택하세요</option>
+            <option>500만원 미만</option>
+            <option>500만~2,000만원</option>
+            <option>2,000만~5,000만원</option>
+            <option>5,000만원 이상</option>
+            <option>아직 모름</option>
+          </select>
+        </div>
+      </div>
+      <div class="kw-field">
+        <label for="kwMessage">추가로 남기실 내용</label>
+        <textarea id="kwMessage" rows="5" placeholder="현재 취급 중인 브랜드, 거래처 성격, 궁금한 조건 등을 적어주세요."></textarea>
+      </div>
+      <div class="kw-field">
+        <label class="kw-check"><input type="checkbox" id="kwAgree" />
+          <span>[필수] 개인정보 수집·이용에 동의합니다.</span></label>
+        <p class="kw-hint">수집 항목: 회사명, 담당자명, 연락처, 이메일, 지역, 문의내용 ·
+          이용 목적: 대리점 계약 상담 · 보유 기간: 상담 종료 후 1년</p>
+      </div>
+    </fieldset>
+
+    <p class="kw-error" id="kwError"></p>
+    <button type="submit" class="kw-submit" id="kwSubmit">계약문의 신청하기</button>
+  </form>
+
+  <div class="kw-done" id="kwDone">
+    <h3>신청이 접수되었습니다.</h3>
+    <p>담당자가 남겨주신 연락처로 영업일 기준 1~2일 내에 연락드리겠습니다.</p>
+  </div>
+</div>
+
+<!-- 구글폼 전송용 숨김 프레임 (응답은 기존 구글폼/시트에 그대로 쌓입니다) -->
+<iframe name="kwGformSink" id="kwGformSink" style="display:none" title="hidden"></iframe>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ===================== 설정 ===================== */
+  var GFORM = {
+    formId: "1FAIpQLScQJZM76Oj9QrK4dRpM7mPnLUt923hQ95RTX1b44N07gI9KvA",
+    // 구글폼 문항별 entry 번호 (미리 채워진 링크에서 복사해 넣으세요)
+    entries: {
+      company: "entry.000000000",
+      name:    "entry.000000000",
+      phone:   "entry.000000000",
+      email:   "entry.000000000",
+      region:  "entry.000000000",
+      items:   "entry.000000000",
+      volume:  "entry.000000000",
+      message: "entry.000000000",
+      utm:     "entry.000000000"   // "유입경로(UTM)" 단답형 문항 (없으면 빈 문자열로 두세요)
+    }
+  };
+
+  // 접속 / 제출 전환 이벤트 이름 - 두 개를 따로 둔다
+  var EVENTS = { view: "dealer_inquiry_view", submit: "dealer_inquiry_submit" };
+  // 광고 계정별 전환 설정 (비워두면 그 채널로는 발송하지 않음)
+  var ADS = {
+    googleAds: { view: "", submit: "" },              // 예: "AW-123456789/AbCdEfGhIj"
+    naver:     { viewType: "", submitType: "2" },     // 네이버 전환유형 2 = 신청/상담
+    kakaoTrackId: "",
+    meta:      { view: "DealerInquiryView", submit: "Lead" }
+  };
+
+  /* ===================== UTM 수집 ===================== */
+  var KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+  var utm = (function () {
+    var params = new URLSearchParams(location.search), out = {}, has = false;
+    KEYS.forEach(function (k) { out[k] = params.get(k) || ""; if (out[k]) has = true; });
+    try {
+      if (has) sessionStorage.setItem("dealerUtm.v1", JSON.stringify(out));
+      else {
+        var saved = JSON.parse(sessionStorage.getItem("dealerUtm.v1") || "null");
+        if (saved) out = saved;
+      }
+    } catch (e) { /* 스토리지가 막힌 환경은 그냥 넘어간다 */ }
+    return out;
+  })();
+
+  function utmText() {
+    var line = KEYS.map(function (k) { return k + "=" + (utm[k] || "-"); }).join(" / ");
+    return line + " / referrer=" + (document.referrer || "-");
+  }
+
+  /* ===================== 전환 이벤트 발송 ===================== */
+  // kind: "view"(접속) | "submit"(제출)
+  function track(kind, extra) {
+    var name = EVENTS[kind];
+    var payload = {
+      event_category: "dealer_inquiry",
+      conversion_step: kind === "view" ? "access" : "submit",
+      utm_source: utm.utm_source || "", utm_medium: utm.utm_medium || "",
+      utm_campaign: utm.utm_campaign || "", utm_content: utm.utm_content || "",
+      utm_term: utm.utm_term || ""
+    };
+    if (extra) for (var k in extra) payload[k] = extra[k];
+
+    try { window.dataLayer = window.dataLayer || []; window.dataLayer.push(Object.assign({ event: name }, payload)); } catch (e) {}
+    try {
+      if (typeof gtag === "function") {
+        gtag("event", name, payload);
+        if (ADS.googleAds[kind]) gtag("event", "conversion", { send_to: ADS.googleAds[kind] });
+      }
+    } catch (e) {}
+    try {
+      if (typeof fbq === "function" && ADS.meta[kind]) {
+        var std = ["Lead", "Contact", "CompleteRegistration", "ViewContent"];
+        fbq(std.indexOf(ADS.meta[kind]) >= 0 ? "track" : "trackCustom", ADS.meta[kind],
+            { content_name: "대리점 계약문의", content_category: utm.utm_campaign || "direct" });
+      }
+    } catch (e) {}
+    try {
+      if (typeof kakaoPixel === "function" && ADS.kakaoTrackId) {
+        var px = kakaoPixel(ADS.kakaoTrackId);
+        if (kind === "view" && px.pageView) px.pageView("dealer_inquiry");
+        if (kind === "submit" && px.completeRegistration) px.completeRegistration("dealer_inquiry");
+      }
+    } catch (e) {}
+    try {
+      var type = kind === "view" ? ADS.naver.viewType : ADS.naver.submitType;
+      if (type && typeof wcs !== "undefined" && typeof wcs_do === "function") {
+        window._nasa = window._nasa || {};
+        window._nasa.cnv = wcs.cnv(type, "0");
+        wcs_do(window._nasa);
+      }
+    } catch (e) {}
+  }
+
+  /* ============ 1) 접속 전환 - 페이지 진입 시 1회 ============ */
+  try {
+    if (sessionStorage.getItem("dealerViewSent.v1") !== "1") {
+      track("view", { form_name: "dealer_inquiry" });
+      sessionStorage.setItem("dealerViewSent.v1", "1");
+    }
+  } catch (e) { track("view", { form_name: "dealer_inquiry" }); }
+
+  /* ===================== 폼 동작 ===================== */
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $("kwDealerForm"), errorBox = $("kwError"), submitBtn = $("kwSubmit");
+
+  // entry 번호를 아직 채우지 않았다면 전송을 막고 눈에 띄게 알린다.
+  var unconfigured = !GFORM.entries.company || GFORM.entries.company.indexOf("000000000") >= 0;
+  if (unconfigured) {
+    var box = $("kwSetup");
+    box.style.display = "block";
+    box.innerHTML = "설정 필요: 이 페이지의 <code>GFORM.entries</code>에 구글폼 entry 번호가 아직 채워지지 않아 " +
+      "신청 내용이 구글폼으로 전송되지 않습니다. (구글폼 ⋮ → 미리 채워진 링크 만들기 → entry.숫자 복사)";
+  }
+
+  // 휴대폰(3-4-4)과 서울 지역번호(02-3/4-4)를 구분해서 하이픈을 넣는다.
+  $("kwPhone").addEventListener("input", function () {
+    var d = this.value.replace(/[^0-9]/g, "").slice(0, 11);
+    if (d.indexOf("02") === 0) {
+      this.value = d.length < 3 ? d
+        : d.length < 7 ? d.slice(0, 2) + "-" + d.slice(2)
+        : d.length < 10 ? d.slice(0, 2) + "-" + d.slice(2, 5) + "-" + d.slice(5, 9)
+        : d.slice(0, 2) + "-" + d.slice(2, 6) + "-" + d.slice(6, 10);
+      return;
+    }
+    this.value = d.length < 4 ? d
+      : d.length < 8 ? d.slice(0, 3) + "-" + d.slice(3)
+      : d.length < 11 ? d.slice(0, 3) + "-" + d.slice(3, 6) + "-" + d.slice(6, 10)
+      : d.slice(0, 3) + "-" + d.slice(3, 7) + "-" + d.slice(7, 11);
+  });
+
+  function value(id) { return String($(id).value || "").trim(); }
+
+  function validate(data) {
+    if (!data.company) return "회사명을 입력해주세요.";
+    if (!data.name) return "담당자명을 입력해주세요.";
+    if (data.phone.replace(/[^0-9]/g, "").length < 9) return "연락처를 정확히 입력해주세요.";
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return "이메일 형식을 확인해주세요.";
+    if (!data.region) return "희망 지역을 선택해주세요.";
+    if (!$("kwAgree").checked) return "개인정보 수집·이용에 동의해주세요.";
+    return "";
+  }
+
+  // 구글폼은 CORS를 허용하지 않으므로, 숨김 iframe을 target으로 한 일반 폼 전송을 사용한다.
+  function sendToGoogleForm(data) {
+    var action = "https://docs.google.com/forms/d/e/" + GFORM.formId + "/formResponse";
+    var proxy = document.createElement("form");
+    proxy.action = action;
+    proxy.method = "POST";
+    proxy.target = "kwGformSink";
+    proxy.style.display = "none";
+
+    var map = GFORM.entries;
+    var pairs = [
+      [map.company, data.company], [map.name, data.name], [map.phone, data.phone],
+      [map.email, data.email], [map.region, data.region], [map.items, data.items],
+      [map.volume, data.volume], [map.message, data.message], [map.utm, utmText()]
+    ];
+    pairs.forEach(function (pair) {
+      if (!pair[0] || pair[0].indexOf("000000000") >= 0) return;
+      var input = document.createElement("input");
+      input.type = "hidden";
+      input.name = pair[0];
+      input.value = pair[1] || "";
+      proxy.appendChild(input);
+    });
+
+    document.body.appendChild(proxy);
+    proxy.submit();
+    setTimeout(function () { document.body.removeChild(proxy); }, 2000);
+  }
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    var data = {
+      company: value("kwCompany"), name: value("kwName"), phone: value("kwPhone"),
+      email: value("kwEmail"), region: value("kwRegion"), items: value("kwItems"),
+      volume: value("kwVolume"), message: value("kwMessage")
+    };
+    var message = validate(data);
+    if (!message && unconfigured) message = "폼 설정이 완료되지 않아 지금은 신청을 받을 수 없습니다. 관리자에게 알려주세요.";
+    if (message) {
+      errorBox.textContent = message;
+      errorBox.className = "kw-error show";
+      return;
+    }
+    errorBox.className = "kw-error";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "전송 중…";
+
+    /* ============ 2) 제출 전환 ============
+       구글이 응답해 숨김 프레임이 로드되는 시점(= 접수 완료)에 한 번만 쏜다.
+       응답이 늦거나 load 이벤트가 오지 않는 브라우저에서도 전환을 놓치지 않도록
+       8초 뒤에는 보정 발송한다. 어느 쪽이든 중복 발송은 되지 않는다. */
+    var finished = false;
+    var finish = function () {
+      if (finished) return;
+      finished = true;
+      track("submit", { form_name: "dealer_inquiry", region: data.region });
+      form.style.display = "none";
+      $("kwDone").style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    var sink = $("kwGformSink");
+    if (sink) sink.addEventListener("load", finish, { once: true });
+    setTimeout(finish, 8000);
+
+    sendToGoogleForm(data);
+  });
+})();
+</script>
