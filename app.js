@@ -666,10 +666,9 @@
   });
 
   // ---- 탭 전환 ----
-  // 탭 전환은 data-tab을 가진 버튼만 대상으로 한다 (다른 페이지로 가는 링크는 제외).
-  document.querySelectorAll(".tab-btn[data-tab]").forEach((btn) => {
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn[data-tab]").forEach((b) => {
+      document.querySelectorAll(".tab-btn").forEach((b) => {
         b.classList.remove("active");
         b.setAttribute("aria-selected", "false");
       });
