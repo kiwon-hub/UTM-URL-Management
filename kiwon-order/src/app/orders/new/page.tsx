@@ -1,11 +1,11 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { lineAmount, todayStr } from "@/lib/calc";
+import { addDays, lineAmount, todayStr } from "@/lib/calc";
 import { normalizeName } from "@/lib/excel/normalize";
-import { CHANNELS, DIVISIONS, ORDER_TYPES } from "@/lib/status";
+import { CHANNELS } from "@/lib/status";
 import { useData } from "@/lib/store";
-import type { ChannelCode, Currency, Customer, DivisionCode, OrderTypeCode } from "@/lib/types";
+import type { ChannelCode, Currency, Customer, OrderTypeCode } from "@/lib/types";
 
 export default function NewOrderPage() {
   return (
@@ -39,9 +39,8 @@ function NewOrder() {
   const params = useSearchParams();
   const copyId = params.get("copy");
 
-  const firstDivision = (DIVISIONS.find((d) => me.divisions.includes(d.code)) ?? DIVISIONS[0]).code;
-  const [division, setDivision] = useState<DivisionCode>(firstDivision);
-  const [orderType, setOrderType] = useState<OrderTypeCode>(firstDivision === "MRO" ? "MRO" : "TOOLS");
+  const [orderType, setOrderType] = useState<OrderTypeCode>("GENERAL");
+  const [saving, setSaving] = useState(false);
   const [orderDate, setOrderDate] = useState(todayStr());
   const [customerText, setCustomerText] = useState("");
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -63,12 +62,12 @@ function NewOrder() {
     if (!copyId) return;
     const o = db.orders.find((x) => x.id === copyId);
     if (!o) return;
-    setDivision(o.division);
     setOrderType(o.orderType);
     setCustomerText(o.customerName);
     setCustomer(db.customers.find((c) => c.id === o.customerId) ?? null);
     setChannel(o.channel);
     setRequester(o.requester ?? "");
+    setCustomerText(o.customerName);
     setAssigneeId(o.assigneeId ?? "");
     setMemo(o.memo ?? "");
     setLines(
@@ -80,7 +79,6 @@ function NewOrder() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [copyId]);
 
-  const types = ORDER_TYPES.filter((t) => t.division === division);
   const defaultCurrency: Currency = orderType === "VIETNAM" ? "USD" : "KRW";
 
   const custMatches = useMemo(() => {
@@ -93,7 +91,7 @@ function NewOrder() {
   // 품번 자동완성 원천: 상품 마스터 + 과거 발주 품목 (최근 단가 포함)
   const catalog = useMemo(() => {
     const m = new Map<string, { code: string; name: string; spec: string; unit: string; price: number | null; currency: Currency; last?: string }>();
-    for (const p of db.products) m.set(p.code, { code: p.code, name: p.name, spec: p.spec ?? "", unit: p.unit, price: p.lastPrice ?? null, currency: p.currency });
+    for (const p of db.products) m.set(p.code, { code: p.code, name: p.name, spec: p.spec ?? "", unit: p.unit ?? "EA", price: p.lastPrice ?? null, currency: p.currency });
     const orders = new Map(db.orders.map((o) => [o.id, o]));
     for (const i of [...db.items].sort((a, b) => (orders.get(a.orderId)?.orderDate ?? "").localeCompare(orders.get(b.orderId)?.orderDate ?? ""))) {
       if (!i.productCode) continue;
@@ -149,26 +147,31 @@ function NewOrder() {
     {} as Record<string, number>,
   );
 
-  function save() {
+  async function save() {
+    if (saving) return;
     setError(null);
-    let cust = customer;
-    if (!cust && customerText.trim()) {
-      if (exact) cust = exact;
-      else if (!confirm(`'${customerText}'은(는) 등록되지 않은 거래처입니다. 새 거래처로 등록할까요?`)) return;
-      else cust = upsertCustomer({ name: customerText.trim(), aliases: [], kind: "B2B" });
+    if (!dueDate) {
+      setError("요청 납기일을 입력하세요. (정확하지 않아도 예상일을 적어두면 임박 알림을 받을 수 있습니다)");
+      return;
     }
-    const r = createOrder({
+    let custId = customer?.id ?? exact?.id ?? null;
+    if (!custId && customerText.trim()) {
+      if (!confirm(`'${customerText}'은(는) 등록되지 않은 거래처입니다. 새 거래처로 등록할까요?`)) return;
+      const c = await upsertCustomer({ name: customerText.trim(), kind: "B2B" });
+      if ("error" in c) return setError(c.error);
+      custId = c.id;
+    }
+    setSaving(true);
+    const r = await createOrder({
       orderDate,
-      division,
       orderType,
-      customerId: cust?.id,
+      customerId: custId,
       customerName: customerText.trim(),
       channel,
       requester: requester || undefined,
       assigneeId: assigneeId || undefined,
       dueDate: dueDate || undefined,
       memo: memo || undefined,
-      source: "MANUAL",
       items: lines
         .filter((l) => l.productName.trim() || l.productCode.trim())
         .map((l) => ({
@@ -183,10 +186,10 @@ function NewOrder() {
           currency: l.currency,
           assigneeId: l.assigneeId || undefined,
           dueDate: l.dueDate || undefined,
-          status: "RECEIVED",
           memo: l.memo.trim() || undefined,
         })),
     });
+    setSaving(false);
     if ("error" in r) {
       setError(r.error);
       return;
@@ -201,7 +204,7 @@ function NewOrder() {
     } else router.push(`/orders?q=${encodeURIComponent(r.orderNo)}`);
   }
 
-  if (!can("create")) return <p className="card p-6">조회 전용 사용자는 발주를 등록할 수 없습니다. 상단에서 사용자를 바꿔 보세요.</p>;
+  if (!can("create")) return <p className="card p-6">조회 전용 사용자는 발주를 등록할 수 없습니다. 관리자에게 권한을 요청하세요.</p>;
 
   return (
     <form
@@ -209,9 +212,10 @@ function NewOrder() {
       onSubmit={(e) => { e.preventDefault(); save(); }}
       onKeyDown={(e) => {
         const t = e.target as HTMLElement;
-        if (e.key !== "Enter" || e.defaultPrevented || t.tagName === "BUTTON") return;
+        if (e.key !== "Enter" || e.defaultPrevented) return;
+        if (e.ctrlKey || e.metaKey) { e.preventDefault(); save(); return; }
+        if (t.tagName === "BUTTON") return;
         e.preventDefault();
-        if (e.ctrlKey || e.metaKey) return save();
         // 상단 입력칸에서 Enter = 다음 칸으로 이동 (실수로 저장되지 않도록)
         const all = [...e.currentTarget.querySelectorAll<HTMLElement>("input:not([disabled]):not([type=checkbox]), select")];
         all[all.indexOf(t) + 1]?.focus();
@@ -230,19 +234,7 @@ function NewOrder() {
           <span className="lbl">발주일 *</span>
           <input type="date" className="inp w-full" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} required />
         </label>
-        <label>
-          <span className="lbl">사업부 *</span>
-          <select className="inp w-full" value={division} onChange={(e) => { const d = e.target.value as DivisionCode; setDivision(d); setOrderType(ORDER_TYPES.find((t) => t.division === d)!.code); }}>
-            {DIVISIONS.map((d) => <option key={d.code} value={d.code} disabled={!can("create", d.code)}>{d.label}{!can("create", d.code) ? " (권한없음)" : ""}</option>)}
-          </select>
-        </label>
-        <label>
-          <span className="lbl">발주구분 *</span>
-          <select className="inp w-full" value={orderType} onChange={(e) => { const t = e.target.value as OrderTypeCode; setOrderType(t); setLines((ls) => ls.map((l) => (l.productName ? l : { ...l, currency: t === "VIETNAM" ? "USD" : "KRW" }))); }}>
-            {types.map((t) => <option key={t.code} value={t.code}>{t.label}</option>)}
-          </select>
-        </label>
-        <div className="relative col-span-2">
+        <div className="relative col-span-2 md:col-span-3 xl:col-span-3">
           <span className="lbl">거래처 * <span className="font-normal text-slate-400">(검색 후 선택)</span></span>
           <input
             ref={custRef}
@@ -283,10 +275,15 @@ function NewOrder() {
             {db.users.filter((u) => u.role !== "VIEWER").map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         </label>
-        <label>
-          <span className="lbl">요청 납기일</span>
-          <input type="date" className="inp w-full" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-        </label>
+        <div className="col-span-2">
+          <span className="lbl">요청 납기일 * <span className="font-normal text-slate-400">(예상일도 OK — 임박 시 알림)</span></span>
+          <div className="flex gap-1">
+            <input type="date" className={`inp min-w-0 flex-1 ${!dueDate ? "border-amber-400" : ""}`} value={dueDate} onChange={(e) => setDueDate(e.target.value)} required aria-label="요청 납기일" />
+            {[3, 7, 14].map((d) => (
+              <button key={d} type="button" tabIndex={-1} className="btn px-2" onClick={() => setDueDate(addDays(orderDate, d))}>+{d}일</button>
+            ))}
+          </div>
+        </div>
         {customer && (customer.shippingMethod || customer.shippingBranch || customer.contact || customer.memo) && (
           <div className="col-span-2 rounded bg-slate-50 p-2 text-[12px] text-slate-700 md:col-span-4 xl:col-span-8">
             <b>거래처 정보 자동 입력:</b> 배송 {customer.shippingMethod ?? "-"} · 지점 {customer.shippingBranch ?? "-"} · 연락처 {customer.contact ?? "-"} {customer.memo && <span className="text-amber-800">· 메모: {customer.memo}</span>}
@@ -396,7 +393,7 @@ function NewOrder() {
           <input type="checkbox" checked={keepGoing} onChange={(e) => setKeepGoing(e.target.checked)} /> 저장 후 계속 입력
         </label>
         <button type="button" className="btn ml-auto" onClick={() => router.back()}>취소</button>
-        <button type="submit" className="btn-primary px-6">저장 (Ctrl+Enter)</button>
+        <button type="submit" className="btn-primary px-6" disabled={saving}>{saving ? "저장 중…" : "저장 (Ctrl+Enter)"}</button>
       </div>
     </form>
   );

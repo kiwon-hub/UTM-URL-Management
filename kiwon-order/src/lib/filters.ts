@@ -10,7 +10,6 @@ export interface Filters {
   product?: string;
   spec?: string;
   code?: string; // 품번/바코드
-  division?: string;
   orderType?: string;
   assignee?: string; // 담당자 (발주 또는 품목 담당)
   status?: string; // 콤마 구분
@@ -63,9 +62,9 @@ export function matchPreset(r: ItemRow, p: Preset, today = todayStr()): boolean 
   }
 }
 
-const has = (v: string | undefined, q: string) => !!v && v.toLowerCase().includes(q);
+const has = (v: string | null | undefined, q: string) => !!v && v.toLowerCase().includes(q);
 
-export function applyFilters(rows: ItemRow[], f: Filters, userName: (id?: string) => string): ItemRow[] {
+export function applyFilters(rows: ItemRow[], f: Filters, userName: (id?: string | null) => string): ItemRow[] {
   const q = f.q?.trim().toLowerCase();
   const statuses = f.status ? (f.status.split(",") as StatusCode[]) : null;
   const today = todayStr();
@@ -73,7 +72,6 @@ export function applyFilters(rows: ItemRow[], f: Filters, userName: (id?: string
     const { order: o, item: i } = r;
     if (f.from && o.orderDate < f.from) return false;
     if (f.to && o.orderDate > f.to) return false;
-    if (f.division && o.division !== f.division) return false;
     if (f.orderType && o.orderType !== f.orderType) return false;
     if (f.source && o.source !== f.source) return false;
     if (f.assignee && o.assigneeId !== f.assignee && i.assigneeId !== f.assignee) return false;

@@ -15,7 +15,7 @@ const STEPS = ["파일 선택", "시트 선택", "컬럼 매핑", "미리보기"
 const MAX_MB = 20;
 
 export default function ImportPage() {
-  const { db, me, can, commitImport } = useData();
+  const { db, me, can, commitImport, fetchFingerprints } = useData();
   const [step, setStep] = useState(1);
   const [mode, setMode] = useState<ImportOptions["mode"]>("DAILY");
   const [fileName, setFileName] = useState("");
@@ -27,7 +27,9 @@ export default function ImportPage() {
   const [mappings, setMappings] = useState<Record<string, FieldKey[]>>({});
   const [types, setTypes] = useState<Record<string, OrderTypeCode>>({});
   const [mapSheet, setMapSheet] = useState("");
-  const [opts, setOpts] = useState<Omit<ImportOptions, "mode">>({ baseYear: new Date().getFullYear(), grouping: "CONSECUTIVE", shipDateAsDelivered: true, strikeAsCancelled: true, yellowAsDone: false, updateExisting: false });
+  const [opts, setOpts] = useState<Omit<ImportOptions, "mode">>({ baseYear: new Date().getFullYear(), grouping: "CONSECUTIVE", shipDateAsDelivered: true, strikeAsCancelled: true, yellowAsDone: true, updateExisting: false });
+  const [existingFingerprints, setExistingFingerprints] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
   const [include, setInclude] = useState<Set<string>>(new Set());
   const [exclude, setExclude] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<"all" | PreviewRow["state"]>("all");
@@ -38,9 +40,8 @@ export default function ImportPage() {
   const options: ImportOptions = { ...opts, mode };
   const orderSheets = sheets.filter((s) => s.role === "orders" && selected.has(s.name));
   const customerSheet = mode === "MIGRATION" && importCustomers ? sheets.find((s) => s.role === "customers" && selected.has(s.name)) ?? null : null;
-  const dupFile = hash && db.importedHashes.includes(hash);
+  const dupFile = hash && db.imports.some((b) => b.fileHash === hash);
 
-  const existingFingerprints = useMemo(() => new Set(db.legacyRows.filter((l) => l.itemId).map((l) => l.fingerprint)), [db.legacyRows]);
   const existingLines = useMemo(() => {
     const o = new Map(db.orders.map((x) => [x.id, x.orderNo]));
     return new Set(db.items.map((i) => `${o.get(i.orderId)}#${i.lineNo}`));
@@ -64,13 +65,14 @@ export default function ImportPage() {
       const buf = await file.arrayBuffer();
       const head = new Uint8Array(buf.slice(0, 4));
       if (!(head[0] === 0x50 && head[1] === 0x4b)) throw new Error("엑셀(xlsx) 형식이 아닌 파일입니다.");
-      const [h, ss] = await Promise.all([sha256(buf), readWorkbook(buf)]);
+      const [h, ss, fps] = await Promise.all([sha256(buf), readWorkbook(buf), fetchFingerprints()]);
+      setExistingFingerprints(fps);
       setFileName(file.name);
       setHash(h);
       setSheets(ss);
       setSelected(new Set(ss.filter((s) => s.role === "orders" || (mode === "MIGRATION" && s.role === "customers")).map((s) => s.name)));
       setMappings(Object.fromEntries(ss.map((s) => [s.name, guessMapping(s.headers)])));
-      setTypes(Object.fromEntries(ss.map((s) => [s.name, sheetToOrderType(s.name) ?? "TOOLS"])));
+      setTypes(Object.fromEntries(ss.map((s) => [s.name, sheetToOrderType(s.name) ?? "GENERAL"])));
       setMapSheet(ss.find((s) => s.role === "orders")?.name ?? "");
       // 최초 이관은 임의로 묶지 않음(원본 1행 = 1건), 일상 등록은 연속 행 묶기를 기본으로
       setOpts((o) => ({ ...o, grouping: mode === "MIGRATION" ? "ROW" : "CONSECUTIVE" }));
@@ -82,9 +84,13 @@ export default function ImportPage() {
     }
   }
 
-  function save() {
+  async function save() {
+    if (saving) return;
+    setErr(null);
+    setSaving(true);
     const c = buildCommit({ previews, options, fileName, fileHash: hash, includeKeys: include, excludeKeys: exclude, customerSheet });
-    const r = commitImport(c);
+    const r = await commitImport(c);
+    setSaving(false);
     if ("error" in r) setErr(r.error);
     else {
       setResult(r);
@@ -135,7 +141,7 @@ export default function ImportPage() {
           <label className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 py-10 text-slate-600 hover:border-blue-400">
             <span className="text-2xl">⇪</span>
             <span className="font-semibold">{loading ? "파일을 읽는 중…" : "엑셀 파일(.xlsx)을 선택하세요"}</span>
-            <span className="text-[12px]">최대 {MAX_MB}MB · 파일은 이 브라우저 안에서만 읽습니다 (시안)</span>
+            <span className="text-[12px]">최대 {MAX_MB}MB · 파일 내용은 브라우저에서 확인한 뒤, 저장을 누를 때만 DB에 올라갑니다</span>
             <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" disabled={loading} onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
           </label>
           <UploadHistory />
@@ -197,7 +203,7 @@ export default function ImportPage() {
               <label className="mb-2 inline-flex items-center gap-2">
                 <span className="lbl mb-0">발주구분</span>
                 <select className="inp" value={types[s.name]} onChange={(e) => setTypes({ ...types, [s.name]: e.target.value as OrderTypeCode })}>
-                  {ORDER_TYPES.map((t) => <option key={t.code} value={t.code}>{t.label} ({label.division(t.division)})</option>)}
+                  {ORDER_TYPES.map((t) => <option key={t.code} value={t.code}>{t.label}</option>)}
                 </select>
               </label>
               <div className="overflow-x-auto">
@@ -244,7 +250,7 @@ export default function ImportPage() {
                 <div className="lbl">서식·날짜 해석 <span className="font-normal text-slate-400">(엑셀 분석 결과 기반 제안 — 확정 전)</span></div>
                 <label className="block"><input type="checkbox" checked={opts.shipDateAsDelivered} onChange={(e) => setOpts({ ...opts, shipDateAsDelivered: e.target.checked })} /> 발송날짜가 있으면 그 날짜에 전량 납품으로 등록 (메모에 분할 기록이 있으면 제외)</label>
                 <label className="block"><input type="checkbox" checked={opts.strikeAsCancelled} onChange={(e) => setOpts({ ...opts, strikeAsCancelled: e.target.checked })} /> 행 전체 취소선 → 취소</label>
-                <label className="block"><input type="checkbox" checked={opts.yellowAsDone} onChange={(e) => setOpts({ ...opts, yellowAsDone: e.target.checked })} /> 노란색 행 → 납품완료 (발송날짜 없어도)</label>
+                <label className="block"><input type="checkbox" checked={opts.yellowAsDone} onChange={(e) => setOpts({ ...opts, yellowAsDone: e.target.checked })} /> 노란색 행 → 납품완료 (확인됨: 노란색 = 완료)</label>
                 <label className="block">연도 없는 날짜(예: 6/11)의 기준 연도 <input type="number" className="inp ml-1 h-7 w-20" value={opts.baseYear} onChange={(e) => setOpts({ ...opts, baseYear: Number(e.target.value) })} /></label>
               </div>
             </div>
@@ -335,10 +341,10 @@ export default function ImportPage() {
             {customerSheet && <li>거래처 시트 {customerSheet.rows.length}행 반영 (중복은 보충만)</li>}
             <li>저장은 전체가 한 번에 처리되며, 중간에 오류가 나면 아무것도 저장되지 않습니다.</li>
           </ul>
-          <div className="rounded bg-amber-50 p-2 text-amber-900">시안에서는 이 브라우저의 테스트 저장소에만 반영됩니다. 운영 DB에는 저장되지 않습니다.</div>
+          <div className="rounded bg-amber-50 p-2 text-amber-900">저장하면 회사 공용 DB에 바로 반영되어 모든 직원 화면에 나타납니다.</div>
           <div className="flex gap-2 pt-2">
             <button className="btn" onClick={() => setStep(6)}>‹ 이전</button>
-            <button className="btn-primary px-6" onClick={save}>저장</button>
+            <button className="btn-primary px-6" onClick={save} disabled={saving}>{saving ? "저장 중… (창을 닫지 마세요)" : "저장"}</button>
           </div>
         </section>
       )}

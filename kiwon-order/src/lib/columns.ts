@@ -8,7 +8,7 @@ export interface ColumnDef {
   align?: "right";
   pinnable?: boolean;
   /** 정렬·엑셀 다운로드용 값 */
-  value: (r: ItemRow, un: (id?: string) => string) => string | number | null;
+  value: (r: ItemRow, un: (id?: string | null) => string) => string | number | null;
 }
 
 export const COLUMNS: ColumnDef[] = [
@@ -29,8 +29,7 @@ export const COLUMNS: ColumnDef[] = [
   { key: "assignee", label: "담당자", width: 70, value: (r, un) => un(r.item.assigneeId ?? r.order.assigneeId) },
   { key: "code", label: "품번", width: 90, value: (r) => r.item.productCode ?? "" },
   { key: "barcode", label: "바코드", width: 110, value: (r) => r.item.barcode ?? "" },
-  { key: "division", label: "사업부", width: 70, value: (r) => label.division(r.order.division) },
-  { key: "orderType", label: "발주구분", width: 90, value: (r) => label.orderType(r.order.orderType) },
+  { key: "orderType", label: "구분(시트)", width: 90, value: (r) => label.orderType(r.order.orderType) },
   { key: "channel", label: "주문경로", width: 80, value: (r) => label.channel(r.order.channel) },
   { key: "supplier", label: "제작/매입처", width: 90, value: (r) => r.item.supplier ?? "" },
   { key: "memo", label: "일정/진행 메모", width: 180, value: (r) => r.item.memo ?? "" },

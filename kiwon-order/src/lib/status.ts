@@ -1,4 +1,4 @@
-import type { ChannelCode, DivisionCode, OrderTypeCode, StatusCode } from "./types";
+import type { ChannelCode, OrderTypeCode, StatusCode } from "./types";
 
 // 상태 정의. 색약 사용자도 구분하도록 색 + 아이콘 모양 + 글자를 함께 씁니다.
 // 2단계부터는 관리자 설정(statuses 테이블)에서 이름·순서·색을 바꿀 수 있습니다.
@@ -24,18 +24,15 @@ export const STATUSES: StatusDef[] = [
 
 export const STATUS_MAP = Object.fromEntries(STATUSES.map((s) => [s.code, s])) as Record<StatusCode, StatusDef>;
 
-export const DIVISIONS: { code: DivisionCode; label: string; short: string }[] = [
-  { code: "TOOLS", label: "기원툴스", short: "KT" },
-  { code: "MRO", label: "기원MRO", short: "KM" },
-];
-
-export const ORDER_TYPES: { code: OrderTypeCode; label: string; sheet: string; division: DivisionCode }[] = [
-  { code: "TOOLS", label: "기원툴스", sheet: "기원툴스", division: "TOOLS" },
-  { code: "MRO", label: "MRO(공구)", sheet: "MRO", division: "MRO" },
-  { code: "MRO_SUPPLY", label: "MRO잡자재", sheet: "MRO잡자재", division: "MRO" },
-  { code: "VIETNAM", label: "베트남", sheet: "베트남", division: "TOOLS" },
-  { code: "STOCK", label: "기원재고", sheet: "기원재고", division: "TOOLS" },
-  { code: "NTY", label: "엔티와이반도체", sheet: "엔티와이반도체", division: "TOOLS" },
+// 사업부 구분은 쓰지 않습니다(업체별 필터로 충분). 엑셀 시트 출처만 '구분'으로 보존합니다.
+export const ORDER_TYPES: { code: OrderTypeCode; label: string; sheet: string }[] = [
+  { code: "GENERAL", label: "일반", sheet: "" },
+  { code: "TOOLS", label: "기원툴스", sheet: "기원툴스" },
+  { code: "MRO", label: "MRO", sheet: "MRO" },
+  { code: "MRO_SUPPLY", label: "MRO잡자재", sheet: "MRO잡자재" },
+  { code: "VIETNAM", label: "베트남", sheet: "베트남" },
+  { code: "STOCK", label: "기원재고", sheet: "기원재고" },
+  { code: "NTY", label: "엔티와이반도체", sheet: "엔티와이반도체" },
 ];
 
 export const CHANNELS: { code: ChannelCode; label: string; keywords: string[] }[] = [
@@ -50,7 +47,6 @@ export const CHANNELS: { code: ChannelCode; label: string; keywords: string[] }[
 ];
 
 export const label = {
-  division: (c: DivisionCode) => DIVISIONS.find((d) => d.code === c)?.label ?? c,
   orderType: (c: OrderTypeCode) => ORDER_TYPES.find((d) => d.code === c)?.label ?? c,
   channel: (c: ChannelCode) => CHANNELS.find((d) => d.code === c)?.label ?? c,
 };

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { addDays, todayStr } from "@/lib/calc";
 import { applyFilters, filtersToQuery, matchPreset, PRESET_LABEL, type Filters, type Preset } from "@/lib/filters";
-import { DIVISIONS, STATUSES } from "@/lib/status";
+import { STATUSES } from "@/lib/status";
 import { useData, userName } from "@/lib/store";
 import { Flag, StatusBadge } from "@/components/StatusBadge";
 import type { ItemRow } from "@/lib/types";
@@ -24,7 +24,7 @@ export default function Dashboard() {
   const { db, rows, me } = useData();
   const [scope, setScope] = useState<"all" | "me">(me.role === "STAFF" ? "me" : "all");
   const [f, setF] = useState<Filters>({ from: addDays(todayStr(), -60) });
-  const un = (id?: string) => userName(db, id);
+  const un = (id?: string | null) => userName(db, id);
 
   const base = useMemo(() => {
     const ff: Filters = { ...f, assignee: scope === "me" ? me.id : f.assignee };
@@ -84,7 +84,7 @@ export default function Dashboard() {
         <div className="inline-flex overflow-hidden rounded border border-slate-300" role="tablist">
           {(["all", "me"] as const).map((s) => (
             <button key={s} role="tab" aria-selected={scope === s} onClick={() => setScope(s)} className={`h-8 px-3 text-[13px] ${scope === s ? "bg-blue-600 font-semibold text-white" : "bg-white text-slate-700"}`}>
-              {s === "all" ? "전체 사업부" : `내 업무 (${me.name})`}
+              {s === "all" ? "전체 업무" : `내 업무 (${me.name})`}
             </button>
           ))}
         </div>
@@ -95,15 +95,6 @@ export default function Dashboard() {
               <input type="date" className="inp" value={f.from ?? ""} onChange={(e) => setF({ ...f, from: e.target.value })} />~
               <input type="date" className="inp" value={f.to ?? ""} onChange={(e) => setF({ ...f, to: e.target.value })} />
             </span>
-          </label>
-          <label>
-            <span className="lbl">사업부</span>
-            <select className="inp" value={f.division ?? ""} onChange={(e) => setF({ ...f, division: e.target.value })}>
-              <option value="">전체</option>
-              {DIVISIONS.map((d) => (
-                <option key={d.code} value={d.code}>{d.label}</option>
-              ))}
-            </select>
           </label>
           {scope === "all" && (
             <label>

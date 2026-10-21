@@ -1,6 +1,5 @@
 // 원본 행 + 컬럼 매핑 → 미리보기 행 (오류·경고·중복 판정 포함)
-import { ORDER_TYPES } from "../status";
-import type { ChannelCode, Currency, DivisionCode, OrderTypeCode, StatusCode, User } from "../types";
+import type { ChannelCode, Currency, OrderTypeCode, StatusCode, User } from "../types";
 import {
   extractDeliveries,
   fingerprint,
@@ -66,7 +65,6 @@ export interface PreviewRow {
   sheet: string;
   rowNo: number;
   orderType: OrderTypeCode;
-  division: DivisionCode;
   fields: PreviewFields;
   issues: Issue[];
   state: "ok" | "warn" | "error" | "duplicate" | "update";
@@ -90,15 +88,14 @@ export function buildPreview(
   sheet: RawSheet,
   mapping: FieldKey[],
   ctx: {
-    users: User[];
+    users: Pick<User, "id" | "name" | "aliases">[];
     existingFingerprints: Set<string>;
     existingLines: Set<string>; // `${orderNo}#${lineNo}`
     options: ImportOptions;
     orderType?: OrderTypeCode; // 시트 이름으로 알 수 없을 때 직접 지정
   },
 ): PreviewRow[] {
-  const orderType = ctx.orderType ?? sheetToOrderType(sheet.name) ?? "TOOLS";
-  const division = ORDER_TYPES.find((t) => t.code === orderType)!.division;
+  const orderType = ctx.orderType ?? sheetToOrderType(sheet.name) ?? "GENERAL";
   const defaultCurrency: Currency = orderType === "VIETNAM" ? "USD" : "KRW";
   const { options } = ctx;
   const seen = new Map<string, string>();
@@ -260,7 +257,6 @@ export function buildPreview(
       sheet: sheet.name,
       rowNo: row.rowNo,
       orderType,
-      division,
       fields,
       issues,
       state,

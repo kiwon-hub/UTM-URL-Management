@@ -18,7 +18,7 @@ const sheet: RawSheet = {
     row(7, [new Date(Date.UTC(2026, 5, 12)), "툴탑", "KW109354", "센터링 코팅", 2, "EA", 15750, null, null, null, null], { strike: "all" }),
   ],
 };
-const users = [{ id: "u1", name: "민구", aliases: [], role: "STAFF" as const, divisions: [] }];
+const users = [{ id: "u1", name: "민구", aliases: [] }];
 const opts = (o: Partial<ImportOptions>): ImportOptions => ({ mode: "MIGRATION", baseYear: 2026, grouping: "ROW", shipDateAsDelivered: true, strikeAsCancelled: true, yellowAsDone: false, updateExisting: false, ...o });
 const preview = (o: ImportOptions) => buildPreview(sheet, guessMapping(headers), { users, existingFingerprints: new Set(), existingLines: new Set(), options: o });
 
@@ -27,8 +27,9 @@ describe("엑셀 업로드 저장 묶음", () => {
     const o = opts({});
     const c = buildCommit({ previews: preview(o), options: o, fileName: "a.xlsx", fileHash: "h", includeKeys: new Set(), excludeKeys: new Set() });
     expect(c.orders).toHaveLength(4); // -40 반품 행 제외
-    expect(c.rowLinks).toHaveLength(5); // 원본 5행 모두 보존
-    expect(c.rowLinks.find((l) => l.legacy.rowNo === 6)?.orderIdx).toBeNull();
+    expect(c.legacyRows).toHaveLength(5); // 원본 5행 모두 보존
+    expect(c.legacyRows.find((l) => l.rowNo === 6)?.itemId).toBeNull();
+    expect(c.legacyRows.find((l) => l.rowNo === 2)?.itemId).toBe(c.orders[0].items[0].id);
     expect(c.batch.errors).toBe(1);
     expect(c.orders[0].presetOrderNo).toBe("L-TOOLS-000002");
   });
@@ -42,14 +43,14 @@ describe("엑셀 업로드 저장 묶음", () => {
   it("발송날짜 → 전량 납품 1건, 취소선 → 취소", () => {
     const o = opts({});
     const c = buildCommit({ previews: preview(o), options: o, fileName: "a", fileHash: "h", includeKeys: new Set(), excludeKeys: new Set() });
-    expect(c.deliveries).toEqual([{ orderIdx: 0, itemIdx: 0, date: "2026-01-09", qty: 5 }]);
+    expect(c.deliveries).toEqual([{ itemId: c.orders[0].items[0].id, date: "2026-01-09", qty: 5 }]);
     expect(c.orders[3].items[0].status).toBe("CANCELLED");
   });
   it("연속 행 묶기는 빈 행에서 끊김", () => {
     const o = opts({ grouping: "CONSECUTIVE", mode: "DAILY" });
     const c = buildCommit({ previews: preview(o), options: o, fileName: "a", fileHash: "h", includeKeys: new Set(), excludeKeys: new Set() });
     expect(c.orders.map((x) => x.items.length)).toEqual([2, 1, 1]);
-    expect(c.orders[0].source).toBe("EXCEL_DAILY");
+    expect(c.orders[0].presetOrderNo).toBeUndefined();
   });
   it("이관 번호 형식", () => {
     expect(legacyOrderNo("VIETNAM", 92)).toBe("L-VN-000092");

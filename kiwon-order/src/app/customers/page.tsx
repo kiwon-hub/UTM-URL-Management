@@ -44,7 +44,7 @@ export default function CustomersPage() {
           <label><span className="lbl">배송지/화물지점</span><input className="inp w-full" value={edit.shippingBranch ?? ""} onChange={(e) => setEdit({ ...edit, shippingBranch: e.target.value })} /></label>
           <label className="md:col-span-2"><span className="lbl">메모</span><input className="inp w-full" value={edit.memo ?? ""} onChange={(e) => setEdit({ ...edit, memo: e.target.value })} /></label>
           <div className="flex items-end gap-1">
-            <button className="btn-primary" disabled={!edit.name?.trim() || !!dup} onClick={() => { upsertCustomer({ ...(edit as Customer), name: edit.name!.trim(), aliases: edit.aliases ?? [] }); setEdit(null); }}>저장</button>
+            <button className="btn-primary" disabled={!edit.name?.trim() || !!dup} onClick={async () => { const r = await upsertCustomer({ ...(edit as Customer), name: edit.name!.trim() }); if ("error" in r) alert(r.error); else setEdit(null); }}>저장</button>
             <button className="btn" onClick={() => setEdit(null)}>취소</button>
           </div>
           {dup && <p className="text-[12px] text-red-700 md:col-span-4">⚠ 같은 거래처가 이미 있습니다: {dup.name} (공백·(주)·대소문자 무시 비교)</p>}
@@ -59,7 +59,7 @@ export default function CustomersPage() {
               return (
                 <tr key={c.id}>
                   <td className="font-medium">{c.name}{c.aliases.length > 0 && <span className="ml-1 text-[11px] text-slate-400">({c.aliases.join(", ")})</span>}</td>
-                  <td>{KIND[c.kind]}</td><td>{c.contact}</td><td>{c.shippingMethod}</td><td>{c.shippingBranch}</td><td className="max-w-[220px] truncate" title={c.memo}>{c.memo}</td>
+                  <td>{KIND[c.kind]}</td><td>{c.contact}</td><td>{c.shippingMethod}</td><td>{c.shippingBranch}</td><td className="max-w-[220px] truncate" title={c.memo ?? undefined}>{c.memo}</td>
                   <td className="text-right">{s?.orders.size ?? 0}</td><td className="text-right">{s?.remain ? <b className="text-amber-800">{s.remain}</b> : 0}</td><td>{s?.last}</td>
                   <td className="space-x-2"><Link className="text-blue-700 underline" href={`/orders${filtersToQuery({ customer: c.name })}`}>발주내역</Link>{can("create") && <button className="text-slate-600 underline" onClick={() => setEdit(c)}>수정</button>}</td>
                 </tr>

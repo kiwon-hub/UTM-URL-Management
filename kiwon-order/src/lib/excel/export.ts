@@ -25,7 +25,7 @@ export function safeCell(v: unknown): unknown {
   return v;
 }
 
-export async function exportRows(rows: ItemRow[], columnKeys: string[], un: (id?: string) => string, fileName: string) {
+export async function exportRows(rows: ItemRow[], columnKeys: string[], un: (id?: string | null) => string, fileName: string) {
   const wb = await workbook();
   const ws = wb.addWorksheet("발주목록", { views: [{ state: "frozen", ySplit: 1 }] });
   const keys = [...new Set([...columnKeys, "orderNo", "lineNo"])];

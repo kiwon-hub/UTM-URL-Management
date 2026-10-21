@@ -1,39 +1,23 @@
-// 도메인 타입. prisma/schema.prisma 와 1:1로 맞춰 둡니다.
-// 1단계 시안에서는 브라우저 메모리(+localStorage)에 저장하고,
-// 2단계부터 같은 모양 그대로 PostgreSQL 로 옮깁니다.
+// 도메인 타입. supabase/migrations 의 테이블과 같은 모양(이름만 camelCase)입니다.
 
 export type Role = "ADMIN" | "STAFF" | "VIEWER";
 
+/** 직원 (관리자가 등록한 사람만 로그인 가능) */
 export interface User {
   id: string;
+  email: string;
   name: string; // 엑셀 '담당자' 값과 매칭 (예: 민구, 이슬)
   aliases: string[]; // 엑셀 표기 변형 (예: '신종현과장님' → 종현)
   role: Role;
-  divisions: DivisionCode[]; // 등록/수정 가능 사업부 (관리자 설정)
+  active: boolean;
+  authUserId?: string | null; // 가입(비밀번호 설정)을 마쳤는지
 }
 
-/** 사업부 */
-export type DivisionCode = "TOOLS" | "MRO";
-
-/** 발주 구분 = 기존 엑셀 시트 구분을 그대로 보존 */
-export type OrderTypeCode =
-  | "TOOLS" // 기원툴스 시트
-  | "MRO" // MRO 시트 (공구)
-  | "MRO_SUPPLY" // MRO잡자재 시트 (장갑·보루 등 소모품, 온라인 주문)
-  | "VIETNAM" // 베트남 시트 (USD 단가)
-  | "STOCK" // 기원재고 시트 (자사 재고 생산 요청)
-  | "NTY"; // 엔티와이반도체 시트 (거래처 전용 분할납품 관리)
+/** 발주 구분 = 기존 엑셀 시트 출처 (새로 입력하는 발주는 '일반') */
+export type OrderTypeCode = "GENERAL" | "TOOLS" | "MRO" | "MRO_SUPPLY" | "VIETNAM" | "STOCK" | "NTY";
 
 /** 주문경로 — 엑셀 업체명 괄호 안 표기에서 추출 (예: 김OO(네이버페이)) */
-export type ChannelCode =
-  | "DIRECT" // 전화·메일·방문 등 직접 거래
-  | "NAVERPAY"
-  | "COUPANG"
-  | "OWNMALL" // 자사몰
-  | "BANK" // 무통장입금
-  | "IMARKET" // 아이마켓
-  | "INTERNAL" // 자사 재고 보충
-  | "ETC";
+export type ChannelCode = "DIRECT" | "NAVERPAY" | "COUPANG" | "OWNMALL" | "BANK" | "IMARKET" | "INTERNAL" | "ETC";
 
 export type StatusCode =
   | "RECEIVED" // 접수
@@ -51,22 +35,22 @@ export type OrderSource = "MANUAL" | "EXCEL_DAILY" | "EXCEL_MIGRATION";
 
 export interface Customer {
   id: string;
-  name: string; // 정식 거래처명
+  name: string;
   normalizedName: string; // 중복 판정용 (공백·(주)·주식회사 제거, 소문자)
-  aliases: string[]; // 엑셀 표기 변형 (예: 'MRO 재고', 'MRO재고')
+  aliases: string[];
   kind: "B2B" | "ONLINE_PERSON" | "INTERNAL" | "OVERSEAS";
-  contact?: string; // 배송담당자/연락처
-  shippingMethod?: string; // 로젠택배, 경동화물, 대신화물 …
-  shippingBranch?: string; // 배송지(화물지점)
-  memo?: string;
+  contact?: string | null;
+  shippingMethod?: string | null;
+  shippingBranch?: string | null;
+  memo?: string | null;
 }
 
 export interface Product {
-  code: string; // 품번 (KW + 6자리 권장)
-  barcode?: string;
+  code: string;
+  barcode?: string | null;
   name: string;
-  spec?: string;
-  unit: string;
+  spec?: string | null;
+  unit?: string | null;
   lastPrice?: number | null;
   currency: Currency;
 }
@@ -81,81 +65,80 @@ export interface Delivery {
   id: string;
   itemId: string;
   kind: "DELIVERY" | "RETURN" | "VOID";
-  date: string; // YYYY-MM-DD
-  qty: number; // 항상 양수
-  voidsId?: string;
-  handlerId: string; // 처리 담당자
-  memo?: string;
+  date: string;
+  qty: number;
+  voidsId?: string | null;
+  handlerId?: string | null;
+  memo?: string | null;
   createdAt: string;
-  createdBy: string;
+  createdBy?: string | null;
 }
 
 export interface OrderItem {
   id: string;
   orderId: string;
   lineNo: number;
-  productCode?: string; // 품번(코드)
-  barcode?: string;
+  productCode?: string | null;
+  barcode?: string | null;
   productName: string;
-  spec?: string;
-  qty: number; // 발주수량
-  cancelledQty: number; // 취소/마감 처리 수량 ('미납 수량 마감처리' 대응)
-  unit?: string;
+  spec?: string | null;
+  qty: number;
+  cancelledQty: number; // 마감(미납 취소) 수량
+  unit?: string | null;
   /** null = 단가 미입력, 0 = 실제 0원(무상) — 반드시 구분 */
   unitPrice: number | null;
-  priceNote?: string; // '무상샘플', '교환' 등 단가 칸의 문자 메모
+  priceNote?: string | null;
   currency: Currency;
-  assigneeId?: string; // 품목별 담당자
-  dueDate?: string; // 품목별 납기
+  assigneeId?: string | null;
+  dueDate?: string | null;
   status: StatusCode;
-  supplier?: string; // 제작/매입처 (엑셀 '일정/진행상황'에 적힌 업체명)
-  memo?: string; // 제작·입고 메모 (엑셀 '일정/진행상황')
-  note?: string; // 엑셀 '비고'
-  attrs?: Record<string, string>; // 시트별 개별 항목: 코팅, 헬릭스, 순서, 생산일자 …
-  legacyRowId?: string; // 엑셀 원본행 참조
+  supplier?: string | null;
+  memo?: string | null;
+  note?: string | null;
+  attrs?: Record<string, string> | null;
 }
 
 export interface Order {
   id: string;
   orderNo: string;
   orderDate: string;
-  division: DivisionCode;
   orderType: OrderTypeCode;
-  customerId?: string;
-  customerName: string; // 등록 당시 표기 그대로
+  customerId?: string | null;
+  customerName: string;
   channel: ChannelCode;
-  requester?: string; // 발주자 (베트남 시트 'HAI/…' 의 앞부분 등)
-  assigneeId?: string;
-  dueDate?: string;
-  memo?: string;
+  requester?: string | null;
+  assigneeId?: string | null;
+  dueDate?: string | null;
+  memo?: string | null;
   source: OrderSource;
-  importBatchId?: string;
-  version: number; // 동시수정 충돌 감지 (낙관적 잠금)
+  importBatchId?: string | null;
+  isTest: boolean;
+  version: number; // 동시수정 충돌 감지
   createdAt: string;
-  createdBy: string;
+  createdBy?: string | null;
   updatedAt: string;
-  updatedBy: string;
+  updatedBy?: string | null;
 }
 
 export interface AuditLog {
   id: string;
   at: string;
-  userId: string;
-  entity: "order" | "item" | "delivery" | "customer";
-  entityId: string;
-  orderId?: string;
-  action: "CREATE" | "UPDATE" | "DELETE" | "STATUS" | "IMPORT";
-  field?: string;
-  before?: string;
-  after?: string;
+  userId?: string | null;
+  entity: string;
+  entityId?: string | null;
+  orderId?: string | null;
+  action: string;
+  field?: string | null;
+  before?: string | null;
+  after?: string | null;
 }
 
 export interface ImportBatch {
   id: string;
   at: string;
-  userId: string;
+  userId?: string | null;
   fileName: string;
-  fileHash: string; // 같은 파일 재업로드 탐지
+  fileHash: string;
   mode: "MIGRATION" | "DAILY";
   sheets: string[];
   total: number;
@@ -165,18 +148,6 @@ export interface ImportBatch {
   errors: number;
 }
 
-/** 품목 + 계산값 (목록 화면용) */
-export interface ItemRow {
-  order: Order;
-  item: OrderItem;
-  delivered: number; // 누적 유효 납품수량
-  remaining: number; // 잔여 미납수량
-  amount: number | null; // 단가 미입력이면 null
-  overdue: boolean;
-  dueSoon: boolean;
-  effectiveStatus: StatusCode;
-}
-
 /** 엑셀 원본 행 보존 (발주로 만들지 못한 오류 행 포함) */
 export interface LegacyRow {
   id: string;
@@ -184,9 +155,9 @@ export interface LegacyRow {
   sheet: string;
   rowNo: number;
   raw: Record<string, unknown>;
-  flags: { strike: "none" | "partial" | "all"; yellow: boolean; red: boolean; comments: string[] };
+  flags: { strike: "none" | "partial" | "all"; yellow: boolean; red: boolean; comments: string[] } | null;
   fingerprint: string;
-  itemId?: string; // 연결된 품목 (오류 행은 없음)
+  itemId?: string | null;
   issues: string[];
 }
 
@@ -196,7 +167,19 @@ export interface SavedView {
   userId: string;
   name: string;
   filters: Record<string, string>;
-  columns: string[]; // 표시 순서
+  columns: string[];
   pageSize: number;
-  sort?: { key: string; dir: "asc" | "desc" };
+  sort?: { key: string; dir: "asc" | "desc" } | null;
+}
+
+/** 품목 + 계산값 (목록 화면용) */
+export interface ItemRow {
+  order: Order;
+  item: OrderItem;
+  delivered: number;
+  remaining: number;
+  amount: number | null;
+  overdue: boolean;
+  dueSoon: boolean;
+  effectiveStatus: StatusCode;
 }

@@ -4,54 +4,75 @@ import { useEffect, useMemo, useState } from "react";
 import { netDelivered, todayStr } from "@/lib/calc";
 import { label, STATUSES } from "@/lib/status";
 import { useData, userName, type SaveResult } from "@/lib/store";
-import type { Order, OrderItem, StatusCode } from "@/lib/types";
+import type { AuditLog, LegacyRow, Order, OrderItem, StatusCode } from "@/lib/types";
 import { Flag, SourceTag, StatusBadge } from "./StatusBadge";
 
 const money = (v: number | null, cur: string) => (v === null ? "—" : cur === "KRW" ? v.toLocaleString() + "원" : `${cur} ${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
 
 export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () => void }) {
-  const { db, rows, can, updateItem, updateOrder, addDelivery, voidDelivery, simulateOtherEdit } = useData();
+  const { db, me, rows, can, updateItem, updateOrder, addDelivery, voidDelivery, fetchAudits, fetchLegacy } = useData();
   const row = rows.find((r) => r.item.id === itemId);
   const [tab, setTab] = useState<"delivery" | "items" | "history" | "source">("delivery");
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
   const [conflict, setConflict] = useState<Order | null>(null);
-  // 패널을 연 시점의 버전 — 저장 시 비교해 다른 사람 수정 여부를 판단
-  const [openedVersion, setOpenedVersion] = useState<number>(row?.order.version ?? 0);
-  const [draft, setDraft] = useState<Partial<OrderItem>>({});
+  const [busy, setBusy] = useState(false);
+  // 입력을 시작한 시점의 버전 — 저장할 때 비교해서 그 사이 다른 직원이 고쳤는지 확인
+  const [draftVersion, setDraftVersion] = useState(0);
+  const [draft, setDraftState] = useState<Partial<OrderItem>>({});
   const [dl, setDl] = useState({ kind: "DELIVERY" as "DELIVERY" | "RETURN", qty: "", date: todayStr(), memo: "" });
+  const [audits, setAudits] = useState<AuditLog[] | null>(null);
+  const [legacy, setLegacy] = useState<LegacyRow | null | undefined>(undefined);
+  const [openedVersion] = useState(row?.order.version ?? 0);
+
+  const setDraft = (d: Partial<OrderItem>) => {
+    if (!Object.keys(draft).length) setDraftVersion(row?.order.version ?? 0);
+    setDraftState(d);
+  };
 
   useEffect(() => {
-    setOpenedVersion(rows.find((r) => r.item.id === itemId)?.order.version ?? 0);
-    setDraft({});
+    setDraftState({});
     setMsg(null);
     setConflict(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setAudits(null);
+    setLegacy(undefined);
   }, [itemId]);
+
+  const orderId = row?.order.id;
+  const version = row?.order.version;
+  useEffect(() => {
+    if (tab === "history" && orderId) fetchAudits(orderId, 200).then(setAudits);
+    if (tab === "source" && legacy === undefined) fetchLegacy(itemId).then(setLegacy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, orderId, version, itemId]);
 
   const deliveries = useMemo(() => db.deliveries.filter((d) => d.itemId === itemId).sort((a, b) => a.createdAt.localeCompare(b.createdAt)), [db.deliveries, itemId]);
   const voided = new Set(deliveries.filter((d) => d.kind === "VOID").map((d) => d.voidsId));
   if (!row) return null;
   const { order, item } = row;
-  const editable = can("edit", order.division);
+  const editable = can("edit");
   const siblings = rows.filter((r) => r.order.id === order.id).sort((a, b) => a.item.lineNo - b.item.lineNo);
-  const audits = db.audits.filter((a) => a.orderId === order.id);
-  const legacy = db.legacyRows.find((l) => l.itemId === item.id);
-  const un = (id?: string) => userName(db, id);
+  const un = (id?: string | null) => userName(db, id);
+  const hasDraft = Object.keys(draft).length > 0;
+  const changedByOther = order.version !== openedVersion && order.updatedBy !== me.id;
 
-  const handle = (r: SaveResult, okText: string) => {
+  const handle = async (p: Promise<SaveResult>, okText: string) => {
+    setBusy(true);
+    const r = await p;
+    setBusy(false);
     if (r.ok) {
       setMsg({ tone: "ok", text: okText });
-      setOpenedVersion(order.version + 1);
-      setDraft({});
+      setDraftState({});
       setConflict(null);
     } else if (r.conflict) {
       setConflict(r.current);
       setMsg({ tone: "err", text: "다른 직원이 먼저 이 발주를 수정했습니다. 최신 내용을 확인한 뒤 다시 저장하세요." });
     } else setMsg({ tone: "err", text: r.message });
+    return r.ok;
   };
 
-  const saveDraft = () => handle(updateItem(item.id, draft, openedVersion), "저장했습니다.");
-  const setStatus = (s: StatusCode) => handle(updateItem(item.id, { status: s }, openedVersion), "상태를 변경했습니다.");
+  const saveDraft = () => handle(updateItem(item.id, draft, draftVersion), "저장했습니다.");
+  // 상태 버튼은 화면에 보이는 최신 버전 기준 (실시간 반영)
+  const setStatus = (s: StatusCode) => handle(updateItem(item.id, { status: s }, order.version), "상태를 변경했습니다.");
   const val = <K extends keyof OrderItem>(k: K) => (k in draft ? draft[k] : item[k]) as OrderItem[K];
 
   return (
@@ -73,6 +94,9 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
       </div>
 
       <div className="overflow-y-auto">
+        {changedByOther && !conflict && (
+          <div className="mx-4 mt-3 rounded bg-blue-50 px-3 py-2 text-[12px] text-blue-800">↻ {un(order.updatedBy)}님이 방금 이 발주를 수정했습니다. 화면은 최신 내용으로 바뀌었습니다.{hasDraft && " 입력 중인 값은 저장 시 다시 확인합니다."}</div>
+        )}
         {msg && (
           <div role="status" className={`mx-4 mt-3 rounded px-3 py-2 text-[13px] ${msg.tone === "ok" ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}>
             {msg.tone === "ok" ? "✔ " : "⚠ "}
@@ -81,7 +105,7 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
               <div className="mt-2 rounded border border-red-200 bg-white p-2 text-[12px] text-slate-700">
                 <div>최신 버전: v{conflict.version} · {un(conflict.updatedBy)} · {conflict.updatedAt.replace("T", " ")}</div>
                 <div className="mt-1 text-slate-500">내가 입력하던 값: {Object.keys(draft).length ? JSON.stringify(draft) : "(상태 변경)"}</div>
-                <button className="btn mt-2 h-7" onClick={() => { setOpenedVersion(conflict.version); setConflict(null); setMsg({ tone: "ok", text: "최신 내용을 불러왔습니다. 입력값은 유지되어 있으니 확인 후 다시 저장하세요." }); }}>
+                <button className="btn mt-2 h-7" onClick={() => { setDraftVersion(conflict.version); setConflict(null); setMsg({ tone: "ok", text: "최신 내용을 불러왔습니다. 입력값은 유지되어 있으니 확인 후 다시 저장하세요." }); }}>
                   최신 내용 불러오기
                 </button>
               </div>
@@ -97,7 +121,7 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
           <Info k="금액" v={money(row.amount, item.currency)} />
           <Info k="납기" v={item.dueDate ?? order.dueDate ?? "—"} />
           <Info k="발주일" v={order.orderDate} />
-          <Info k="사업부/구분" v={`${label.division(order.division)} · ${label.orderType(order.orderType)}`} />
+          <Info k="구분" v={label.orderType(order.orderType)} />
           <Info k="주문경로" v={label.channel(order.channel) + (order.requester ? ` · 발주자 ${order.requester}` : "")} />
           <Info k="발주 담당" v={un(order.assigneeId) || "—"} />
           <Info k="품목 담당" v={un(item.assigneeId) || "—"} />
@@ -141,18 +165,15 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
               </label>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <button className="btn-primary" disabled={!Object.keys(draft).length} onClick={saveDraft}>변경 저장</button>
-              {Object.keys(draft).length > 0 && <button className="btn" onClick={() => setDraft({})}>되돌리기</button>}
-              <span className="ml-auto text-[11px] text-slate-400">v{order.version} · 마지막 수정 {un(order.updatedBy)}</span>
+              <button className="btn-primary" disabled={!hasDraft || busy} onClick={saveDraft}>{busy ? "저장 중…" : "변경 저장"}</button>
+              {hasDraft && <button className="btn" onClick={() => setDraftState({})}>되돌리기</button>}
+              <span className="ml-auto text-[11px] text-slate-400">마지막 수정 {un(order.updatedBy)} {order.updatedAt.slice(5, 16).replace("T", " ")}</span>
             </div>
-            <button className="mt-2 text-[11px] text-slate-400 underline" onClick={() => simulateOtherEdit(order.id)}>
-              [시연] 다른 직원이 동시에 수정한 상황 만들기
-            </button>
           </div>
         )}
 
         <div className="sticky top-0 z-10 flex border-y border-slate-200 bg-slate-50 px-2" role="tablist">
-          {([["delivery", `납품이력 (${deliveries.length})`], ["items", `같은 발주 품목 (${siblings.length})`], ["history", `수정이력 (${audits.length})`], ["source", "등록 출처"]] as const).map(([k, l]) => (
+          {([["delivery", `납품이력 (${deliveries.length})`], ["items", `같은 발주 품목 (${siblings.length})`], ["history", audits ? `수정이력 (${audits.length})` : "수정이력"], ["source", "등록 출처"]] as const).map(([k, l]) => (
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`px-3 py-2 text-[13px] ${tab === k ? "border-b-2 border-blue-600 font-semibold text-blue-800" : "text-slate-600"}`}>
               {l}
             </button>
@@ -164,11 +185,10 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
             {editable && item.status !== "CANCELLED" && (
               <form
                 className="mb-3 flex flex-wrap items-center gap-2 rounded border border-slate-200 bg-slate-50 p-2"
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
-                  const r = addDelivery(item.id, dl.kind, Number(dl.qty), dl.date, dl.memo || undefined);
-                  handle(r, dl.kind === "DELIVERY" ? `${dl.qty}개 납품을 등록했습니다.` : `${dl.qty}개 반품을 등록했습니다.`);
-                  if (r.ok) setDl({ ...dl, qty: "", memo: "" });
+                  const ok = await handle(addDelivery(item.id, dl.kind, Number(dl.qty), dl.date, dl.memo || undefined), dl.kind === "DELIVERY" ? `${dl.qty}개 납품을 등록했습니다.` : `${dl.qty}개 반품을 등록했습니다.`);
+                  if (ok) setDl({ ...dl, qty: "", memo: "" });
                 }}
               >
                 <select className="inp" value={dl.kind} onChange={(e) => setDl({ ...dl, kind: e.target.value as "DELIVERY" | "RETURN" })} aria-label="구분">
@@ -178,7 +198,7 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
                 <input className="inp w-24 text-right" type="number" min={1} max={dl.kind === "DELIVERY" ? row.remaining : row.delivered} placeholder={dl.kind === "DELIVERY" ? `최대 ${row.remaining}` : `최대 ${row.delivered}`} value={dl.qty} onChange={(e) => setDl({ ...dl, qty: e.target.value })} aria-label="수량" required />
                 <input className="inp w-36" type="date" value={dl.date} onChange={(e) => setDl({ ...dl, date: e.target.value })} aria-label="날짜" required />
                 <input className="inp min-w-0 flex-1" placeholder="메모 (택배·송장 등)" value={dl.memo} onChange={(e) => setDl({ ...dl, memo: e.target.value })} aria-label="메모" />
-                <button className="btn-primary" type="submit">등록</button>
+                <button className="btn-primary" type="submit" disabled={busy}>등록</button>
               </form>
             )}
             <table className="w-full text-[13px]">
@@ -204,7 +224,7 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
                       </td>
                       <td className={`text-right ${isVoided ? "line-through" : ""}`}>{d.kind === "RETURN" ? "-" : d.kind === "VOID" ? "±" : "+"}{d.qty}</td>
                       <td className="pl-3">{un(d.handlerId)}</td>
-                      <td className="max-w-[160px] truncate" title={d.memo}>{d.memo}</td>
+                      <td className="max-w-[160px] truncate" title={d.memo ?? undefined}>{d.memo}</td>
                       <td className="text-right">
                         {editable && d.kind !== "VOID" && !isVoided && (
                           <button
@@ -252,7 +272,7 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
               {editable && (
                 <button className="btn ml-1" onClick={() => {
                   const memo = prompt("발주 비고", order.memo ?? "");
-                  if (memo !== null) handle(updateOrder(order.id, { memo }, openedVersion), "발주 비고를 저장했습니다.");
+                  if (memo !== null) handle(updateOrder(order.id, { memo }, order.version), "발주 비고를 저장했습니다.");
                 }}>발주 비고 수정</button>
               )}
             </li>
@@ -261,7 +281,8 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
 
         {tab === "history" && (
           <ul className="divide-y divide-slate-100 px-4 py-2 text-[12px]">
-            {audits.map((a) => (
+            {audits === null && <li className="py-4 text-center text-slate-500">불러오는 중…</li>}
+            {(audits ?? []).map((a) => (
               <li key={a.id} className="py-1.5">
                 <span className="text-slate-500">{a.at.replace("T", " ")}</span> · <b>{un(a.userId)}</b> · {a.action === "CREATE" ? "등록" : a.action === "STATUS" ? "상태변경" : a.action === "IMPORT" ? "업로드" : "수정"}
                 {a.field && <span> [{a.field}]</span>}
@@ -272,7 +293,7 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
                 )}
               </li>
             ))}
-            {!audits.length && <li className="py-4 text-center text-slate-500">수정 이력이 없습니다. (시안 초기 데이터)</li>}
+            {audits?.length === 0 && <li className="py-4 text-center text-slate-500">수정 이력이 없습니다.</li>}
           </ul>
         )}
 
@@ -283,7 +304,7 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
             </p>
             {legacy ? (
               <div className="mt-2">
-                <div className="text-slate-600">원본: <b>{legacy.sheet}</b> 시트 {legacy.rowNo}행 {legacy.flags.strike !== "none" && "· 취소선"} {legacy.flags.yellow && "· 노란색 행"} {legacy.flags.red && "· 빨간 글씨"}</div>
+                <div className="text-slate-600">원본: <b>{legacy.sheet}</b> 시트 {legacy.rowNo}행 {legacy.flags?.strike !== "none" && legacy.flags?.strike && "· 취소선"} {legacy.flags?.yellow && "· 노란색 행(완료)"} {legacy.flags?.red && "· 빨간 글씨"}</div>
                 <table className="mt-1 w-full text-[12px]">
                   <tbody>
                     {Object.entries(legacy.raw).map(([k, v]) => (
@@ -294,7 +315,7 @@ export function DetailPanel({ itemId, onClose }: { itemId: string; onClose: () =
                 {legacy.issues.length > 0 && <ul className="mt-2 list-disc pl-4 text-[12px] text-amber-800">{legacy.issues.map((x, i) => <li key={i}>{x}</li>)}</ul>}
               </div>
             ) : (
-              <p className="mt-2 text-slate-500">{order.source === "MANUAL" ? "직원이 화면에서 직접 입력한 발주입니다." : "엑셀 업로드 원본 행 정보가 없습니다 (시안 초기 데이터)."}</p>
+              <p className="mt-2 text-slate-500">{legacy === undefined ? "불러오는 중…" : order.source === "MANUAL" ? "직원이 화면에서 직접 입력한 발주입니다." : "엑셀 원본 행 정보가 없습니다."}</p>
             )}
           </div>
         )}

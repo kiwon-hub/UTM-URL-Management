@@ -5,7 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { COLUMNS, DEFAULT_COLUMNS, PINNED, type ColumnDef } from "@/lib/columns";
 import { exportRows } from "@/lib/excel/export";
 import { applyFilters, filtersFromParams, filtersToQuery, PRESET_LABEL, type Filters } from "@/lib/filters";
-import { DIVISIONS, ORDER_TYPES, STATUSES } from "@/lib/status";
+import { ORDER_TYPES, STATUSES } from "@/lib/status";
 import { useData, userName } from "@/lib/store";
 import type { ItemRow } from "@/lib/types";
 import { DetailPanel } from "@/components/DetailPanel";
@@ -29,7 +29,7 @@ function OrderList() {
   const f = useMemo(() => filtersFromParams(new URLSearchParams(params.toString())), [params]);
   const sel = params.get("sel");
   const setF = (nf: Filters & { sel?: string }) => router.replace(path + filtersToQuery(nf), { scroll: false });
-  const un = (id?: string) => userName(db, id);
+  const un = (id?: string | null) => userName(db, id);
 
   // 직원별 표시 설정 (컬럼 순서·표시, 정렬, 페이지당 건수, 내 담당 먼저)
   const [cols, setCols] = useState<string[]>(DEFAULT_COLUMNS);
@@ -151,8 +151,7 @@ function OrderList() {
               <input type="date" className="inp" value={f.to ?? ""} onChange={(e) => setF({ ...f, to: e.target.value })} />
             </span>
           </label>
-          <Sel label="사업부" value={f.division} onChange={(v) => setF({ ...f, division: v })} options={DIVISIONS.map((d) => [d.code, d.label])} />
-          <Sel label="발주구분" value={f.orderType} onChange={(v) => setF({ ...f, orderType: v })} options={ORDER_TYPES.map((d) => [d.code, d.label])} />
+          <Sel label="구분(시트)" value={f.orderType} onChange={(v) => setF({ ...f, orderType: v })} options={ORDER_TYPES.map((d) => [d.code, d.label])} />
           <Sel label="담당자" value={f.assignee} onChange={(v) => setF({ ...f, assignee: v })} options={db.users.filter((u) => u.role !== "VIEWER").map((u) => [u.id, u.name])} />
           <Sel label="진행상태" value={f.status} onChange={(v) => setF({ ...f, status: v })} options={[...STATUSES.map((s) => [s.code, `${s.icon} ${s.label}`] as [string, string]), ["RECEIVED,CONFIRMED,IN_PRODUCTION,READY,PARTIAL", "▶ 진행 중 전체"]]} />
           <Sel label="미납" value={f.remain} onChange={(v) => setF({ ...f, remain: v as Filters["remain"] })} options={[["Y", "미납 있음"], ["N", "미납 없음"]]} />
@@ -249,7 +248,7 @@ function OrderList() {
   );
 }
 
-function Cell({ c, r, un }: { c: ColumnDef; r: ItemRow; un: (id?: string) => string }) {
+function Cell({ c, r, un }: { c: ColumnDef; r: ItemRow; un: (id?: string | null) => string }) {
   switch (c.key) {
     case "orderNo":
       return <span className="font-mono text-[12px]">{r.order.orderNo}</span>;
