@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+# 운영 엑셀·백업 파일은 저장소에 올리지 않음
+*.xlsx
+*.xls
+backups/
+src/**/*.local.test.ts

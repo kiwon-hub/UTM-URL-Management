@@ -1,0 +1,508 @@
+// KIWON 통합 발주관리 시스템 — PostgreSQL 스키마 (3단계 설계안)
+// 필드 이름은 src/lib/types.ts 와 같고, DB 컬럼은 snake_case 로 매핑합니다.
+// 수량 = Decimal(12,3) (봉·kg 등 소수 가능성 대비), 금액·단가 = Decimal(14,4) (USD 소수 단가)
+// 단가 NULL = 미입력, 0 = 실제 0원 — 기본값을 절대 0으로 두지 않습니다.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────── 열거형 ─────────────────────────
+
+enum Role {
+  ADMIN
+  STAFF
+  VIEWER
+}
+
+enum ChannelCode {
+  DIRECT
+  NAVERPAY
+  COUPANG
+  OWNMALL
+  BANK
+  IMARKET
+  INTERNAL
+  ETC
+}
+
+enum Currency {
+  KRW
+  USD
+  CNY
+  VND
+  THB
+}
+
+enum OrderSource {
+  MANUAL
+  EXCEL_DAILY
+  EXCEL_MIGRATION
+}
+
+enum CustomerKind {
+  B2B
+  ONLINE_PERSON
+  INTERNAL
+  OVERSEAS
+}
+
+enum DeliveryKind {
+  DELIVERY // 납품 (+)
+  RETURN   // 반품 (-)
+  VOID     // 잘못 입력한 이력 무효화 (voidsId 의 효과 상쇄)
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  STATUS
+  IMPORT
+  LOGIN
+}
+
+enum ImportMode {
+  MIGRATION
+  DAILY
+}
+
+enum ImportStatus {
+  DRAFT      // 파일 올림, 매핑 중
+  VALIDATED  // 검증 완료
+  COMMITTED  // 저장 완료
+  FAILED     // 오류로 전체 롤백
+  REVERTED   // 관리자가 되돌림
+}
+
+enum GroupingMethod {
+  SINGLE_ROW // 원본 1행 = 발주 1건 (기본)
+  SUGGESTED  // 날짜+업체 연속 묶음 추천을 사용자가 승인
+  MANUAL     // 사용자가 직접 묶음
+}
+
+// ───────────────────────── 사용자·권한 ─────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  loginId      String    @unique @map("login_id")
+  name         String
+  aliases      String[]  @default([]) // 엑셀 '담당자' 표기 변형 (예: 신종현과장님)
+  passwordHash String?   @map("password_hash") // Supabase Auth 사용 시 null
+  authUserId   String?   @unique @map("auth_user_id")
+  role         Role      @default(STAFF)
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  lastLoginAt  DateTime? @map("last_login_at")
+
+  divisions        UserDivision[]
+  permissions      UserPermission[]
+  assignedOrders   Order[]          @relation("OrderAssignee")
+  assignedItems    OrderItem[]      @relation("ItemAssignee")
+  handledDeliveries Delivery[]      @relation("DeliveryHandler")
+  createdDeliveries Delivery[]      @relation("DeliveryCreator")
+  auditLogs        AuditLog[]
+  savedViews       SavedView[]
+  importBatches    ImportBatch[]
+
+  @@map("users")
+}
+
+/// 역할별 기본 권한. 관리자 설정에서 변경 가능.
+model RolePermission {
+  role       Role
+  permission String // 예: order.create, order.update, delivery.void, import.migration, admin.users
+  allowed    Boolean @default(true)
+
+  @@id([role, permission])
+  @@map("role_permissions")
+}
+
+/// 사용자 개별 예외 권한 (역할 기본값을 덮어씀)
+model UserPermission {
+  userId     String  @map("user_id")
+  permission String
+  allowed    Boolean
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permission])
+  @@map("user_permissions")
+}
+
+/// 사용자가 등록·수정할 수 있는 사업부
+model UserDivision {
+  userId       String @map("user_id")
+  divisionCode String @map("division_code")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  division Division @relation(fields: [divisionCode], references: [code])
+
+  @@id([userId, divisionCode])
+  @@map("user_divisions")
+}
+
+// ───────────────────────── 코드 테이블 (관리자 수정 가능) ─────────────────────────
+
+model Division {
+  code        String  @id // TOOLS, MRO
+  name        String // 기원툴스, 기원MRO
+  orderPrefix String  @map("order_prefix") // KT, KM
+  sortOrder   Int     @default(0) @map("sort_order")
+  isActive    Boolean @default(true) @map("is_active")
+
+  orderTypes OrderType[]
+  orders     Order[]
+  users      UserDivision[]
+
+  @@map("divisions")
+}
+
+/// 발주 구분 = 기존 엑셀 시트 (기원툴스, MRO, MRO잡자재, 베트남, 기원재고, 엔티와이반도체)
+model OrderType {
+  code            String   @id // TOOLS, MRO, MRO_SUPPLY, VIETNAM, STOCK, NTY
+  name            String
+  divisionCode    String   @map("division_code")
+  legacySheetName String?  @map("legacy_sheet_name")
+  defaultCurrency Currency @default(KRW) @map("default_currency")
+  sortOrder       Int      @default(0) @map("sort_order")
+  isActive        Boolean  @default(true) @map("is_active")
+
+  division Division @relation(fields: [divisionCode], references: [code])
+  orders   Order[]
+
+  @@map("order_types")
+}
+
+/// 진행상태. code 는 집계 규칙에 쓰이므로 고정, 이름·색·아이콘·순서만 관리자가 수정.
+model Status {
+  code      String  @id // RECEIVED, CONFIRMED, IN_PRODUCTION, READY, PARTIAL, DELIVERED, ON_HOLD, CANCELLED
+  label     String
+  color     String // 토큰 이름 (예: blue)
+  icon      String // 색약 대응 아이콘
+  sortOrder Int     @map("sort_order")
+  isAuto    Boolean @default(false) @map("is_auto") // PARTIAL·DELIVERED = 수량으로 자동 판정
+  isClosed  Boolean @default(false) @map("is_closed") // DELIVERED·CANCELLED (진행 중 집계 제외)
+  isActive  Boolean @default(true) @map("is_active")
+
+  items OrderItem[]
+
+  @@map("statuses")
+}
+
+model AppSetting {
+  key       String   @id // due_soon_days, order_no_format …
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@map("app_settings")
+}
+
+// ───────────────────────── 거래처·상품 ─────────────────────────
+
+model Customer {
+  id             String       @id @default(cuid())
+  name           String
+  normalizedName String       @unique @map("normalized_name") // 중복 방지 (공백·(주)·주식회사 제거, 소문자)
+  kind           CustomerKind @default(B2B)
+  contact        String? // 배송담당자/연락처
+  shippingMethod String?      @map("shipping_method")
+  shippingBranch String?      @map("shipping_branch") // 배송지(화물지점)
+  address        String?
+  memo           String?
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  aliases CustomerAlias[]
+  orders  Order[]
+
+  @@index([name])
+  @@map("customers")
+}
+
+/// 엑셀 표기 변형 → 거래처 매칭 (예: 'MRO 재고', '아이마켓(진양오일씰)')
+model CustomerAlias {
+  id              String @id @default(cuid())
+  customerId      String @map("customer_id")
+  alias           String
+  normalizedAlias String @unique @map("normalized_alias")
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_aliases")
+}
+
+model Product {
+  code        String    @id // 품번 (KW + 6자리 권장)
+  barcode     String?
+  name        String
+  spec        String?
+  category    String? // 엑셀 '바코드' 열에 들어있던 분류명 (고경도용 4날 코너R …)
+  unit        String    @default("EA")
+  lastPrice   Decimal?  @map("last_price") @db.Decimal(14, 4)
+  currency    Currency  @default(KRW)
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  items OrderItem[]
+
+  @@index([barcode])
+  @@index([name])
+  @@map("products")
+}
+
+// ───────────────────────── 발주 ─────────────────────────
+
+model Order {
+  id             String         @id @default(cuid())
+  orderNo        String         @unique @map("order_no") // KT-261021-001 / 이관분 L-기원툴스-000318
+  orderDate      DateTime       @map("order_date") @db.Date
+  divisionCode   String         @map("division_code")
+  orderTypeCode  String         @map("order_type_code")
+  customerId     String?        @map("customer_id")
+  customerName   String         @map("customer_name") // 등록 당시 표기 그대로
+  channel        ChannelCode    @default(DIRECT)
+  requester      String? // 발주자 (베트남 'HAI' 등)
+  assigneeId     String?        @map("assignee_id")
+  dueDate        DateTime?      @map("due_date") @db.Date
+  memo           String?
+  source         OrderSource    @default(MANUAL)
+  importBatchId  String?        @map("import_batch_id")
+  groupingMethod GroupingMethod @default(SINGLE_ROW) @map("grouping_method")
+  copiedFromId   String?        @map("copied_from_id")
+  isHidden       Boolean        @default(false) @map("is_hidden") // '삭제' = 숨김
+  version        Int            @default(1) // 낙관적 잠금
+  createdAt      DateTime       @default(now()) @map("created_at")
+  createdBy      String         @map("created_by")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  updatedBy      String         @map("updated_by")
+
+  division    Division     @relation(fields: [divisionCode], references: [code])
+  orderType   OrderType    @relation(fields: [orderTypeCode], references: [code])
+  customer    Customer?    @relation(fields: [customerId], references: [id])
+  assignee    User?        @relation("OrderAssignee", fields: [assigneeId], references: [id])
+  importBatch ImportBatch? @relation(fields: [importBatchId], references: [id])
+  items       OrderItem[]
+  attachments Attachment[]
+
+  @@index([orderDate])
+  @@index([customerId, orderDate])
+  @@index([assigneeId])
+  @@index([divisionCode, orderTypeCode])
+  @@map("orders")
+}
+
+/// 일자별 발주번호 일련번호 (동시 등록 시 중복 방지: UPDATE … RETURNING 으로 증가)
+model OrderNoSequence {
+  prefix String // KT-261021
+  lastNo Int    @default(0) @map("last_no")
+
+  @@id([prefix])
+  @@map("order_no_sequences")
+}
+
+model OrderItem {
+  id           String    @id @default(cuid())
+  orderId      String    @map("order_id")
+  lineNo       Int       @map("line_no")
+  productCode  String?   @map("product_code") // 품번 (상품 마스터에 없어도 저장 가능)
+  barcode      String?
+  productName  String    @map("product_name")
+  spec         String?
+  qty          Decimal   @db.Decimal(12, 3) // 발주수량 (> 0)
+  cancelledQty Decimal   @default(0) @map("cancelled_qty") @db.Decimal(12, 3) // 취소·잔량마감 수량
+  deliveredQty Decimal   @default(0) @map("delivered_qty") @db.Decimal(12, 3) // 누적 유효 납품 (deliveries 로부터 트리거 갱신, 캐시)
+  unit         String?
+  unitPrice    Decimal?  @map("unit_price") @db.Decimal(14, 4) // NULL=미입력, 0=0원
+  priceNote    String?   @map("price_note") // 무상샘플, 교환 …
+  currency     Currency  @default(KRW)
+  assigneeId   String?   @map("assignee_id")
+  dueDate      DateTime? @map("due_date") @db.Date
+  statusCode   String    @default("RECEIVED") @map("status_code")
+  supplier     String? // 제작·매입처
+  memo         String? // 제작·입고 메모 (엑셀 '일정/진행상황')
+  note         String? // 엑셀 '비고'
+  attrs        Json? // 시트별 개별 항목 (코팅, 헬릭스, 순서, 생산일자 …)
+  legacyRowId  String?   @unique @map("legacy_row_id")
+  version      Int       @default(1)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  order      Order      @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  product    Product?   @relation(fields: [productCode], references: [code])
+  assignee   User?      @relation("ItemAssignee", fields: [assigneeId], references: [id])
+  status     Status     @relation(fields: [statusCode], references: [code])
+  legacyRow  LegacyRow? @relation(fields: [legacyRowId], references: [id])
+  deliveries Delivery[]
+
+  // 아래 CHECK 제약은 마이그레이션 SQL 에 직접 추가 (Prisma 미지원):
+  //   CHECK (qty > 0)
+  //   CHECK (cancelled_qty >= 0 AND delivered_qty >= 0)
+  //   CHECK (delivered_qty + cancelled_qty <= qty)      -- 납품 초과 방지
+  //   CHECK (unit_price IS NULL OR unit_price >= 0)
+  @@unique([orderId, lineNo])
+  @@index([productCode])
+  @@index([assigneeId, statusCode])
+  @@index([dueDate])
+  @@index([statusCode])
+  @@map("order_items")
+}
+
+/// 납품(출고)·반품·무효화 이력. UPDATE/DELETE 금지 (DB 권한·트리거로 차단).
+model Delivery {
+  id        String       @id @default(cuid())
+  itemId    String       @map("item_id")
+  kind      DeliveryKind
+  date      DateTime     @db.Date
+  qty       Decimal      @db.Decimal(12, 3) // 항상 양수
+  voidsId   String?      @unique @map("voids_id") // VOID 가 무효화하는 이력 (한 이력은 한 번만 무효화)
+  handlerId String       @map("handler_id")
+  memo      String?
+  createdAt DateTime     @default(now()) @map("created_at")
+  createdBy String       @map("created_by")
+
+  item    OrderItem  @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  handler User       @relation("DeliveryHandler", fields: [handlerId], references: [id])
+  creator User       @relation("DeliveryCreator", fields: [createdBy], references: [id])
+  voids   Delivery?  @relation("DeliveryVoid", fields: [voidsId], references: [id])
+  voidedBy Delivery? @relation("DeliveryVoid")
+
+  // CHECK (qty > 0), CHECK ((kind = 'VOID') = (voids_id IS NOT NULL)) — 마이그레이션 SQL
+  @@index([itemId, date])
+  @@index([date])
+  @@map("deliveries")
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  orderId    String   @map("order_id")
+  fileName   String   @map("file_name")
+  storageKey String   @map("storage_key") // 스토리지 경로 (공개 URL 저장 금지)
+  mimeType   String   @map("mime_type")
+  size       Int
+  sha256     String
+  uploadedBy String   @map("uploaded_by")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@map("attachments")
+}
+
+// ───────────────────────── 감사 로그 ─────────────────────────
+
+/// 추가만 가능 (append-only). 변경 사용자·시각·변경 전/후 값.
+model AuditLog {
+  id        BigInt      @id @default(autoincrement())
+  at        DateTime    @default(now())
+  userId    String      @map("user_id")
+  entity    String // order, item, delivery, customer, user, setting, import
+  entityId  String      @map("entity_id")
+  orderId   String?     @map("order_id") // 상세 화면 '수정이력' 조회용
+  action    AuditAction
+  field     String?
+  before    Json?
+  after     Json?
+  requestId String?     @map("request_id") // 한 번의 저장에서 생긴 변경 묶음
+  ip        String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([orderId, at])
+  @@index([entity, entityId])
+  @@index([userId, at])
+  @@map("audit_logs")
+}
+
+// ───────────────────────── 엑셀 업로드 ─────────────────────────
+
+/// 업로드한 원본 파일 (스토리지에 보관, 해시로 재업로드 탐지)
+model ImportFile {
+  id         String   @id @default(cuid())
+  fileName   String   @map("file_name")
+  sha256     String   @unique
+  size       Int
+  storageKey String   @map("storage_key")
+  uploadedBy String   @map("uploaded_by")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  batches ImportBatch[]
+
+  @@map("import_files")
+}
+
+model ImportBatch {
+  id          String       @id @default(cuid())
+  fileId      String       @map("file_id")
+  userId      String       @map("user_id")
+  mode        ImportMode
+  status      ImportStatus @default(DRAFT)
+  sheets      String[]
+  mapping     Json // 시트별 컬럼 매핑·기본 담당자·서식 규칙 토글
+  total       Int          @default(0)
+  inserted    Int          @default(0)
+  updated     Int          @default(0)
+  skipped     Int          @default(0)
+  errors      Int          @default(0)
+  errorReport String?      @map("error_report") // 오류행 엑셀 스토리지 키
+  startedAt   DateTime     @default(now()) @map("started_at")
+  finishedAt  DateTime?    @map("finished_at")
+
+  file       ImportFile  @relation(fields: [fileId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+  orders     Order[]
+  legacyRows LegacyRow[]
+
+  @@map("import_batches")
+}
+
+/// 엑셀 원본 행 그대로 보존 (이관 규칙을 바꿔 다시 변환할 수 있도록)
+model LegacyRow {
+  id          String   @id @default(cuid())
+  batchId     String   @map("batch_id")
+  sheetName   String   @map("sheet_name")
+  rowNumber   Int      @map("row_number")
+  raw         Json // { "A": {"v": "2026-01-08", "t": "d", "f": null}, ... } 셀 원문·타입·수식
+  formatFlags Json?    @map("format_flags") // { fill: "FFFF00", strike: true, red: false, comment: "…" }
+  fingerprint String // 시트+날짜+업체+품명+수량 정규화 해시 (중복 탐지)
+  issues      Json? // 검증 오류·경고 목록
+  result      String // INSERTED / UPDATED / SKIPPED / ERROR
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  batch ImportBatch @relation(fields: [batchId], references: [id])
+  item  OrderItem?
+
+  @@unique([batchId, sheetName, rowNumber])
+  @@index([fingerprint])
+  @@map("legacy_rows")
+}
+
+// ───────────────────────── 사용자 화면 설정 ─────────────────────────
+
+model SavedView {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  screen    String // orders, dashboard
+  name      String
+  filters   Json
+  columns   Json // 표시 컬럼·순서·너비·고정
+  sort      Json?
+  pageSize  Int      @default(50) @map("page_size")
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, screen, name])
+  @@map("saved_views")
+}
