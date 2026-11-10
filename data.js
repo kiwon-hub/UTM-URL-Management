@@ -25,7 +25,7 @@ const UTM_DATA = {
       platforms: [
         { id: "kakao", name: "카카오" },
         { id: "naver", name: "네이버" },
-        { id: "offline", name: "오프라인" }
+        { id: "qr", name: "QR코드" }
       ],
       pages: [
         { id: "root", name: "메인페이지", path: "/" },
@@ -91,14 +91,14 @@ const UTM_DATA = {
           ]
         },
         {
-          id: "offline_qr",
-          name: "오프라인 QR코드",
-          platform: "offline",
-          medium: "offline_qr",
+          id: "site_qr",
+          name: "사이트 QR (PC→모바일 전환)",
+          platform: "qr",
+          medium: "qr_code",
           defaultSource: "kiwonmro",
-          code: "ofqr",
+          code: "siteqr",
           variants: [
-            { id: "detail_page", name: "상세페이지 QR (홈페이지 연결)", campaign: "detailpage_ofqr", page: "root" }
+            { id: "detail_page", name: "상세페이지 QR (홈페이지 연결)", campaign: "detailpage_siteqr", page: "root" }
           ]
         }
       ]
