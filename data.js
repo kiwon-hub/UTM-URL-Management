@@ -10,9 +10,9 @@
  *   - campaigns: [{ id, name, groups: [...] }] 형태로 캠페인(목적)과 그룹(신규/리마케팅 등)을 두 단계로 나눈 목록
  *     (조합이 많아 목록이 길어지는 채널에 사용 — 예: 카카오모먼트). 각 group의 모양은 variant와 동일하다.
  *     새 캠페인/그룹을 추가하려면 이 배열에 객체 하나만 추가하면 된다.
- *   최종 선택 항목(variant 또는 group)의 campaign 필드는 "{프로모션}_{채널코드}" 형식으로 저장하고
- *   (예: freesample_nakey, simtos_new_kamom), app.js가 실제 utm_campaign을 만들 때 여기에
- *   "{현재 소스}_{현재 미디움}_"을 앞에 붙여 "{소스}_{미디움}_{프로모션}_{채널코드}"를 완성한다.
+ *   최종 선택 항목(variant 또는 group)의 campaign 필드가 곧 utm_campaign 값이며,
+ *   "{프로모션}_{채널코드}" 형식을 따른다 (예: freesample_nakey, simtos_new_kamom).
+ *   source/medium은 이미 utm_source/utm_medium 파라미터에 있으므로 캠페인 값에는 다시 넣지 않는다.
  *   최종 선택 항목에 source가 없으면 channel의 defaultSource를 사용한다 (4번 utm_source 단계에서 수동으로 바꿀 수도 있다).
  * - pages: 사이트별 랜딩 페이지 프리셋 (기존 대장에 실제 쓰인 경로들).
  */
@@ -24,7 +24,8 @@ const UTM_DATA = {
       domain: "kiwonmro.com",
       platforms: [
         { id: "kakao", name: "카카오" },
-        { id: "naver", name: "네이버" }
+        { id: "naver", name: "네이버" },
+        { id: "offline", name: "오프라인" }
       ],
       pages: [
         { id: "root", name: "메인페이지", path: "/" },
@@ -87,6 +88,17 @@ const UTM_DATA = {
             { id: "binding", name: "포장용품류", campaign: "binding_napc", page: "cat119", content: "20250918" },
             { id: "welding", name: "연마용접부품", campaign: "welding_napc", page: "cat128", content: "20250926" },
             { id: "antifriction", name: "방청윤활제", campaign: "antifriction_napc", page: "cat145", content: "20251002" }
+          ]
+        },
+        {
+          id: "offline_qr",
+          name: "오프라인 QR코드",
+          platform: "offline",
+          medium: "offline_qr",
+          defaultSource: "kiwonmro",
+          code: "ofqr",
+          variants: [
+            { id: "detail_page", name: "상세페이지 QR (홈페이지 연결)", campaign: "detailpage_ofqr", page: "root" }
           ]
         }
       ]
